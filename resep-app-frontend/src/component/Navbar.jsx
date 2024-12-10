@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // Mengimpor FontAwesomeIcon
+import { faHeart, faPlus, faUser, faSignOutAlt } from '@fortawesome/free-solid-svg-icons'; // Mengimpor ikon
 
 const Navbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false); // Mengelola status dropdown
@@ -22,18 +24,21 @@ const Navbar = () => {
         </div>
 
         {/* Menu untuk Desktop */}
-        <div className="hidden md:flex space-x-10 items-center ml-auto">
-          <Link className="text-white font-semibold hover:text-orange-300" to="/favorites">
+        <div className="hidden md:flex space-x-6 items-center ml-auto text-sm"> {/* Mengurangi ukuran font dengan text-sm */}
+          <Link className="text-white hover:text-orange-300 flex items-center" to="/favorites">
+            <FontAwesomeIcon icon={faHeart} className="mr-2" />
             Favorit
           </Link>
-          <Link className="text-white font-semibold hover:text-orange-300" to="/recipes">
+          <Link className="text-white hover:text-orange-300 flex items-center" to="/recipes">
+            <FontAwesomeIcon icon={faPlus} className="mr-2" />
             Tambah Recipe
           </Link>
           <div className="relative">
             <button
-              className="text-white font-semibold hover:text-orange-300"
+              className="text-white hover:text-orange-300 flex items-center"
               onClick={() => setDropdownOpen(!dropdownOpen)}
             >
+              <FontAwesomeIcon icon={faUser} className="mr-2" />
               Profile
             </button>
             {dropdownOpen && (
@@ -44,6 +49,7 @@ const Navbar = () => {
                       className="block px-4 py-2 hover:bg-gray-200"
                       to="/profile"
                     >
+                      <FontAwesomeIcon icon={faUser} className="mr-2" />
                       Profile
                     </Link>
                   </li>
@@ -52,6 +58,7 @@ const Navbar = () => {
                       className="block px-4 py-2 text-red-500 hover:bg-gray-200 w-full text-left"
                       onClick={handleLogout}
                     >
+                      <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
                       Logout
                     </button>
                   </li>
@@ -87,24 +94,27 @@ const Navbar = () => {
       {menuOpen && (
         <div className="md:hidden mt-4 space-y-2 bg-orange-500 text-white p-4 rounded-lg shadow-lg">
           <Link
-            className="block hover:text-gray-300"
+            className="hover:text-gray-300 flex items-center"
             to="/favorites"
             onClick={() => setMenuOpen(false)}
           >
+            <FontAwesomeIcon icon={faHeart} className="mr-2" />
             Favorit
           </Link>
           <Link
-            className="block hover:text-gray-300"
+            className="hover:text-gray-300 flex items-center"
             to="/recipes"
             onClick={() => setMenuOpen(false)}
           >
+            <FontAwesomeIcon icon={faPlus} className="mr-2" />
             Tambah Recipe
           </Link>
           <div>
             <button
-              className="block w-full text-left hover:text-gray-300"
+              className="w-full text-left hover:text-gray-300 flex items-center"
               onClick={() => setDropdownOpen(!dropdownOpen)}
             >
+              <FontAwesomeIcon icon={faUser} className="mr-2" />
               Profile
             </button>
             {dropdownOpen && (
@@ -112,18 +122,20 @@ const Navbar = () => {
                 <ul>
                   <li>
                     <Link
-                      className="block px-4 py-2 hover:bg-gray-200"
+                      className="px-4 py-2 hover:bg-gray-200 flex items-center"
                       to="/profile"
                       onClick={() => setMenuOpen(false)}
                     >
+                      <FontAwesomeIcon icon={faUser} className="mr-2" />
                       Profile
                     </Link>
                   </li>
                   <li>
                     <button
-                      className="block px-4 py-2 text-red-500 hover:bg-gray-200 w-full text-left"
+                      className="px-4 py-2 text-red-500 hover:bg-gray-200 w-full text-left flex items-center"
                       onClick={handleLogout}
                     >
+                      <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
                       Logout
                     </button>
                   </li>
