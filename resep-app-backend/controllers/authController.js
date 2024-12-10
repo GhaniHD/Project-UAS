@@ -4,6 +4,7 @@ const User = require('../models/User');
 
 exports.register = async (req, res) => {
   try {
+     console.log("Data diterima di backend:", req.body);
     const { email, password } = req.body;
     const user = new User({ email, password });
     await user.save();
