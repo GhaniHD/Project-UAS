@@ -1,10 +1,13 @@
 const express = require('express');
 const { getProfile, updatePhoto } = require('../controllers/profileController');
-const authMiddleware = require('../');
+const authMiddleware = require('../middleware/authMiddleware'); // Perbaiki import
 
 const router = express.Router();
 
-router.get('/', authMiddleware, getProfile); // Endpoint untuk mendapatkan profil
-router.put('/photo', authMiddleware, updatePhoto); // Endpoint untuk memperbarui foto
+// Endpoint untuk mendapatkan profil
+router.get('/', authMiddleware, getProfile);
+
+// Endpoint untuk memperbarui foto
+router.put('/photo', authMiddleware, updatePhoto);
 
 module.exports = router;

@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
+const profileRoutes = require('./routes/profileRoutes');
 
 const authMiddleware = require('./middleware/authMiddleware'); // Import middleware otentikasi
 
@@ -17,6 +18,9 @@ app.use(bodyParser.json());
 
 // Rute untuk login dan register
 app.use('/auth', authRoutes);
+
+// Rute untuk profil
+app.use('/profile', authMiddleware, profileRoutes); // Menambahkan route untuk profil
 
 
 // Rute untuk recipes (hanya bisa diakses jika sudah login)

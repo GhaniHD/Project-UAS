@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../AuthContext'; // Menggunakan konteks Auth untuk autentikasi
+import { useNavigate } from 'react-router-dom'; // Impor useNavigate
 
 const Profile = () => {
   const { auth, logout } = useAuth();
@@ -8,6 +9,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [editingPhoto, setEditingPhoto] = useState(false); // State untuk mode edit foto
   const [newPhoto, setNewPhoto] = useState(''); // State untuk menyimpan URL foto baru
+  const navigate = useNavigate(); // Hook navigate untuk navigasi ke halaman lain
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -57,11 +59,15 @@ const Profile = () => {
     return <p className="text-red-500">User data not available.</p>;
   }
 
+  const handleBackToHome = () => {
+    navigate('/menu'); // Navigasi ke halaman /
+  };
+
   return (
-    <div className="container mx-auto mt-10">
+    <div className="container mx-auto mt-12">
       <div className="bg-white shadow-lg rounded-lg overflow-hidden flex">
         {/* Sidebar */}
-        <div className="bg-gradient-to-r from-orange-500 to-pink-500 w-1/3 p-6 flex flex-col items-center text-white">
+        <div className="bg-gradient-to-r from-orange-700 to-orange-300 w-1/2 p-6 py-28 flex flex-col items-center text-white">
           <img
             src={user.photo || 'https://via.placeholder.com/100'} // Tampilkan foto pengguna
             alt="Profile"
@@ -102,7 +108,7 @@ const Profile = () => {
         </div>
 
         {/* Main Content */}
-        <div className="w-2/3 p-6">
+        <div className="w-2/3 p-6 mt-12">
           <h3 className="text-xl font-semibold mb-4">Information</h3>
           <div className="grid grid-cols-2 gap-4 text-gray-700">
             <div>
@@ -126,12 +132,22 @@ const Profile = () => {
             <p className="text-gray-500">No favorite items yet.</p>
           )}
 
+          
+          <button
+            onClick={handleBackToHome} // Menambahkan fungsi navigasi ke home
+            className="mt-6 bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
+          >
+            Back to Home
+          </button>
+
+
           <button
             onClick={logout}
-            className="mt-6 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="mt-6 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 ml-4"
           >
             Logout
           </button>
+
         </div>
       </div>
     </div>
