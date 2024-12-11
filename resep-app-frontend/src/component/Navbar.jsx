@@ -31,7 +31,7 @@ const Navbar = () => {
           </Link>
           <Link className="text-white hover:text-orange-300 flex items-center" to="/recipes">
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Tambah Recipe
+            Tambah Resep
           </Link>
           <div className="relative">
             <button
@@ -59,7 +59,7 @@ const Navbar = () => {
                       onClick={handleLogout}
                     >
                       <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
-                      Logout
+                      keluar
                     </button>
                   </li>
                 </ul>

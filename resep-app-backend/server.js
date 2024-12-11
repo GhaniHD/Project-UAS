@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const path = require('path');
 
 const authMiddleware = require('./middleware/authMiddleware'); // Import middleware otentikasi
 
@@ -15,6 +16,11 @@ connectDB();
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve uploaded files
 
 // Rute untuk login dan register
 app.use('/auth', authRoutes);

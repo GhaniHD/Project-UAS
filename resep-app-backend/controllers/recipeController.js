@@ -1,21 +1,28 @@
 const Recipe = require('../models/Recipe');
 
-exports.getAllRecipes = async (req, res) => {
-  try {
-    const recipes = await Recipe.find().populate('user', 'email');
-    res.status(200).json(recipes);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
 exports.addRecipe = async (req, res) => {
-  const { title, description, ingredients, steps } = req.body;
+  console.log('Request body:', req.body);
   try {
-    const recipe = new Recipe({ title, description, ingredients, steps, user: req.user.id });
-    await recipe.save();
-    res.status(201).json(recipe);
+    const { title, description, servings, cookingTime, ingredients } = req.body;
+
+    const recipeData = {
+      title,
+      description,
+      servings: Number(servings),
+      cookingTime: Number(cookingTime),
+      ingredients: JSON.parse(ingredients),
+      user: req.user.id,
+    };
+
+    if (req.file) {
+      recipeData.image = `/uploads/${req.file.filename}`;
+    }
+
+    const newRecipe = new Recipe(recipeData);
+    await newRecipe.save();
+
+    res.status(201).json(newRecipe);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ message: 'Error creating recipe', error: err.message });
   }
 };
