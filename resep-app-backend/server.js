@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const path = require('path');
+const multer = require('multer');
 
 const authMiddleware = require('./middleware/authMiddleware'); // Import middleware otentikasi
 
@@ -27,7 +28,6 @@ app.use('/auth', authRoutes);
 
 // Rute untuk profil
 app.use('/profile', authMiddleware, profileRoutes); // Menambahkan route untuk profil
-
 
 // Rute untuk recipes (hanya bisa diakses jika sudah login)
 app.use('/recipes', authMiddleware, recipeRoutes); // Menambahkan authMiddleware di sini

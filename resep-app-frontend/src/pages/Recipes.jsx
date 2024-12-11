@@ -1,262 +1,199 @@
-import { useEffect, useState } from 'react';
-import axios from '../axios'; // Pastikan axios sudah dikonfigurasi dengan baseURL
+import React, { useState } from 'react';
 
 const Recipes = () => {
-  const [recipes, setRecipes] = useState([]);
-  const [newRecipe, setNewRecipe] = useState({
-    title: '',
-    description: '',
-    servings: '',
-    cookingTime: '',
-    ingredients: [''], // Memulai dengan satu input bahan
-    image: null,
-  });
-  const [error, setError] = useState(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [servings, setServings] = useState('');
+  const [cookingTime, setCookingTime] = useState('');
+  const [ingredients, setIngredients] = useState([]);
+  const [image, setImage] = useState(null);
 
-  // Mengambil token dari localStorage
-  const token = localStorage.getItem('token'); // Pastikan token ada di localStorage
+  // Menambah input bahan
+  const addIngredient = () => {
+    setIngredients([...ingredients, '']); // Menambah input bahan baru
+  };
 
-  // Fetching recipes from the backend
-  const fetchRecipes = async () => {
+  // Menghapus input bahan berdasarkan index
+  const removeIngredient = (index) => {
+    const updatedIngredients = ingredients.filter((_, i) => i !== index);
+    setIngredients(updatedIngredients); // Menghapus bahan berdasarkan index
+  };
+
+  // Mengubah nilai bahan di indeks tertentu
+  const handleIngredientChange = (index, value) => {
+    const updatedIngredients = ingredients.map((ingredient, i) => 
+      i === index ? value : ingredient
+    );
+    setIngredients(updatedIngredients);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validasi data
+    if (!title || !description || ingredients.length === 0) {
+      alert('Nama resep dan bahan-bahan wajib diisi.');
+      return;
+    }
+
+    // Pastikan servings dan cookingTime adalah angka
+    const servingsNumber = Number(servings);
+    const cookingTimeNumber = Number(cookingTime);
+
+    // Memastikan data yang dikirim sesuai format
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('servings', servingsNumber);
+    formData.append('cookingTime', cookingTimeNumber);
+    formData.append('ingredients', JSON.stringify(ingredients));
+
+    // Jika ada file gambar, tambahkan ke FormData
+    if (image) {
+      formData.append('image', image);
+    }
+
     try {
-      console.log('Fetching recipes...'); // Log sebelum permintaan
-      const response = await axios.get('/recipes', {
+      const response = await fetch('http://localhost:5000/recipes', {
+        method: 'POST',
+        body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`, // Sertakan token di header
+          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Menggunakan token untuk otentikasi
         },
       });
-      console.log('Response data:', response.data); // Log data respons
-      setRecipes(response.data); // Menyimpan resep yang diterima ke state
-    } catch (err) {
-      console.error('Error fetching recipes:', err.response?.data || err.message);
-      setError('Gagal mengambil data resep.');
+
+      const data = await response.json();
+      console.log('Response after adding recipe:', data);
+
+      if (response.ok) {
+        alert('Recipe added successfully');
+
+        // Reset form setelah sukses
+        setTitle('');
+        setDescription('');
+        setServings('');
+        setCookingTime('');
+        setIngredients([]);
+        setImage(null);
+      } else {
+        alert(data.message || 'Failed to add recipe');
+      }
+    } catch (error) {
+      console.error('Error submitting recipe:', error);
+      alert('Error submitting recipe');
     }
   };
 
-  // Mengambil resep yang sudah ada ketika komponen dimuat
-  useEffect(() => {
-    fetchRecipes();
-  }, []); // Menjalankan sekali saat komponen dimuat
-
-  // Handle form submission to add a new recipe
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  // Validasi input
-  if (!newRecipe.title || !newRecipe.ingredients || newRecipe.ingredients.length === 0 || newRecipe.ingredients.some(i => i.trim() === '')) {
-    setError('Nama resep dan bahan-bahan wajib diisi.');
-    console.log('Error: Nama resep atau bahan-bahan tidak valid');
-    return;
-  }
-
-  const recipeData = {
-    title: newRecipe.title,
-    description: newRecipe.description,
-    servings: newRecipe.servings,
-    cookingTime: newRecipe.cookingTime,
-    ingredients: newRecipe.ingredients,
-  };
-
-  // Log data untuk memastikan
-  console.log('Recipe Data before sending:', recipeData);
-
-  try {
-    const response = await axios.post('/recipes', recipeData, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json', // Pastikan tipe konten yang benar
-      },
-    });
-
-    console.log('Response after adding recipe:', response.data);
-
-    // Reset form setelah berhasil
-    setNewRecipe({
-      title: '',
-      description: '',
-      servings: '',
-      cookingTime: '',
-      ingredients: [''],
-      image: null,
-    });
-
-    fetchRecipes(); // Ambil data resep terbaru setelah berhasil menambah
-  } catch (err) {
-    console.error('Error:', err.response?.data || err);
-    setError(err.response?.data?.message || 'Gagal menambah resep.');
-  }
-};
-  
-
-  // Handle image change
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    setNewRecipe({ ...newRecipe, image: file });
-  };
-
-  // Handle ingredient change
-  const handleIngredientChange = (index, value) => {
-    const updatedIngredients = [...newRecipe.ingredients];
-    updatedIngredients[index] = value;
-    setNewRecipe({ ...newRecipe, ingredients: updatedIngredients });
-  };
-
-  // Add a new ingredient field
-  const addIngredient = () => {
-    setNewRecipe({ ...newRecipe, ingredients: [...newRecipe.ingredients, ''] });
-  };
-
-  // Remove an ingredient field
-  const removeIngredient = (index) => {
-    const updatedIngredients = newRecipe.ingredients.filter((_, i) => i !== index);
-    setNewRecipe({ ...newRecipe, ingredients: updatedIngredients });
+    setImage(e.target.files[0]); // Menangkap file gambar
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 px-4">
-      <h1 className="text-4xl font-extrabold text-center text-[#e26816] mb-8">Tulis Resep Baru</h1>
+    <div className="max-w-lg mx-auto bg-orange-50 p-6 rounded-lg shadow-lg mt-10">
+      <h1 className="text-2xl font-semibold text-center mb-6 text-orange-700">Add Recipe</h1>
 
-      {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-xl">
-        <div className="text-center mb-6">
-          <label htmlFor="image" className="cursor-pointer">
-            {newRecipe.image ? (
-              <img
-                src={URL.createObjectURL(newRecipe.image)}
-                alt="Preview"
-                className="w-40 h-40 object-cover mx-auto rounded-lg border"
-              />
-            ) : (
-              <div className="w-40 h-40 mx-auto bg-gray-200 rounded-lg flex items-center justify-center border">
-                <img
-                  src="/path-to-camera-icon.png"
-                  alt="Camera Icon"
-                  className="w-16 h-16 opacity-50"
-                />
-              </div>
-            )}
-          </label>
-          <input
-            type="file"
-            id="image"
-            name="image"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="hidden"
+      {image && (
+        <div className="mb-6">
+          <img
+            src={URL.createObjectURL(image)}
+            alt="Cover"
+            className="w-full h-56 object-cover rounded-lg mb-4"
           />
-          <p className="mt-2 text-gray-600">Tambahkan foto resep</p>
         </div>
+      )}
 
-        <div className="mb-4">
-          <label htmlFor="title" className="block text-gray-700 font-medium mb-2">Nama Resep</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Recipe Title</label>
           <input
             type="text"
-            id="title"
-            name="title"
-            value={newRecipe.title}
-            onChange={(e) => setNewRecipe({ ...newRecipe, title: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e26816]"
-            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Recipe Title"
+            className="w-full p-3 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         </div>
 
-        <div className="mb-4">
-          <label htmlFor="description" className="block text-gray-700 font-medium mb-2">Deskripsi</label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Recipe Description</label>
           <textarea
-            id="description"
-            name="description"
-            value={newRecipe.description}
-            onChange={(e) => setNewRecipe({ ...newRecipe, description: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e26816]"
-            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Recipe Description"
+            className="w-full p-3 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label htmlFor="servings" className="block text-gray-700 font-medium mb-2">Jumlah Porsi</label>
-            <input
-              type="number"
-              id="servings"
-              name="servings"
-              value={newRecipe.servings}
-              onChange={(e) => setNewRecipe({ ...newRecipe, servings: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e26816]"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="cookingTime" className="block text-gray-700 font-medium mb-2">Durasi Memasak (menit)</label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Servings</label>
           <input
             type="number"
-            id="cookingTime"
-            name="cookingTime"
-            value={newRecipe.cookingTime}
-            onChange={(e) => setNewRecipe({ ...newRecipe, cookingTime: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e26816]"
-            required
+            value={servings}
+            onChange={(e) => setServings(e.target.value)}
+            placeholder="Servings"
+            className="w-full p-3 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Bahan-bahan</label>
-          {newRecipe.ingredients.map((ingredient, index) => (
-            <div key={index} className="flex items-center mb-2">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Cooking Time</label>
+          <input
+            type="number"
+            value={cookingTime}
+            onChange={(e) => setCookingTime(e.target.value)}
+            placeholder="Cooking Time"
+            className="w-full p-3 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Ingredients</label>
+          {ingredients.map((ingredient, index) => (
+            <div key={index} className="flex items-center space-x-2">
               <input
                 type="text"
                 value={ingredient}
                 onChange={(e) => handleIngredientChange(index, e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e26816]"
-                required
+                placeholder="Ingredient"
+                className="w-full p-3 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
               <button
                 type="button"
                 onClick={() => removeIngredient(index)}
-                className="ml-2 px-4 py-2 text-white bg-red-500 rounded-md hover:bg-red-600"
+                className="text-red-500 hover:text-red-700"
               >
-                Hapus
+                Remove
               </button>
             </div>
           ))}
+
           <button
             type="button"
             onClick={addIngredient}
-            className="mt-2 px-4 py-2 text-white bg-[#e26816] rounded-md hover:bg-orange-600"
+            className="mt-3 w-full bg-orange-600 text-white p-3 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
-            Tambah Bahan
+            Add Ingredient
           </button>
         </div>
 
-        <button
-          type="submit"
-          className="w-full px-4 py-2 bg-[#e26816] text-white rounded-md hover:bg-orange-600"
-        >
-          Tambahkan Resep
-        </button>
-      </form>
-
-      <div className="mt-10">
-        <h2 className="text-3xl font-semibold text-[#e26816]">Resep Saya</h2>
-        <div className="mt-6">
-          {recipes.length > 0 ? (
-            <ul>
-              {recipes.map((recipe) => (
-                <li key={recipe.id} className="mb-4">
-                  <h3 className="text-xl font-semibold">{recipe.title}</h3>
-                  <p>{recipe.description}</p>
-                  <p><strong>Porsi:</strong> {recipe.servings}</p>
-                  <p><strong>Durasi Memasak:</strong> {recipe.cookingTime} menit</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>Tidak ada resep yang ditampilkan.</p>
-          )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Upload Image</label>
+          <input
+            type="file"
+            onChange={handleImageChange}
+            className="w-full p-3 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
         </div>
-      </div>
+
+        <div className="text-center">
+          <button
+            type="submit"
+            className="w-full bg-orange-600 text-white p-3 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            Submit Recipe
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
