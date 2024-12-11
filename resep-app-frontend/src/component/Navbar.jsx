@@ -1,65 +1,59 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // Mengimpor FontAwesomeIcon
-import { faHeart, faPlus, faUser, faSignOutAlt } from '@fortawesome/free-solid-svg-icons'; // Mengimpor ikon
+import { MenuIcon, XIcon, UserIcon, HeartIcon, PlusCircleIcon, LogOutIcon } from 'lucide-react';
 
 const Navbar = () => {
-  const [dropdownOpen, setDropdownOpen] = useState(false); // Mengelola status dropdown
-  const [menuOpen, setMenuOpen] = useState(false); // Untuk menu mobile
-  const { logout } = useAuth(); // Menggunakan logout dari AuthContext
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+ const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
   return (
-    <nav className="bg-orange-600 p-4">
-      <div className="container mx-auto flex justify-between items-center">
+    <nav className="bg-gradient-to-r from-orange-500 to-orange-600 shadow-lg">
+      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
         <div className="text-white text-2xl font-bold">
-          <h1>Resepku</h1>
+          <Link to="/" className="hover:opacity-80 transition-opacity">Resepku</Link>
         </div>
 
-        {/* Menu untuk Desktop */}
-        <div className="hidden md:flex space-x-6 items-center ml-auto text-sm"> {/* Mengurangi ukuran font dengan text-sm */}
-          <Link className="text-white hover:text-orange-300 flex items-center" to="/favorites">
-            <FontAwesomeIcon icon={faHeart} className="mr-2" />
-            Favorit
+        {/* Menu for Desktop */}
+        <div className="hidden md:flex space-x-8 items-center">
+          <Link to="/favorites" className="text-white hover:text-orange-300 flex items-center">
+            <HeartIcon size={20} className="mr-2" /> Favorit
           </Link>
-          <Link className="text-white hover:text-orange-300 flex items-center" to="/recipes">
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Tambah Resep
+          <Link to="/recipes" className="text-white hover:text-orange-300 flex items-center">
+            <PlusCircleIcon size={20} className="mr-2" /> Tambah Resep
           </Link>
           <div className="relative">
             <button
-              className="text-white hover:text-orange-300 flex items-center"
               onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="text-white hover:text-orange-300 flex items-center"
             >
-              <FontAwesomeIcon icon={faUser} className="mr-2" />
-              Profile
+              <UserIcon size={20} className="mr-2" /> Profile
             </button>
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white text-black shadow-lg rounded-lg z-10">
+              <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg z-10">
                 <ul>
                   <li>
                     <Link
-                      className="block px-4 py-2 hover:bg-gray-200"
                       to="/profile"
+                      className="block px-4 py-2 text-black hover:bg-gray-200 flex items-center"
                     >
-                      <FontAwesomeIcon icon={faUser} className="mr-2" />
-                      Profile
+                      <UserIcon size={20} className="mr-2" /> Profile
                     </Link>
                   </li>
                   <li>
                     <button
-                      className="block px-4 py-2 text-red-500 hover:bg-gray-200 w-full text-left"
                       onClick={handleLogout}
+                      className="block w-full px-4 py-2 text-red-500 hover:bg-gray-200 flex items-center"
                     >
-                      <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
-                      keluar
+                      <LogOutIcon size={20} className="mr-2" /> Logout
                     </button>
                   </li>
                 </ul>
@@ -68,75 +62,57 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Hamburger Menu untuk Mobile */}
+        {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-white hover:text-gray-300"
           onClick={() => setMenuOpen(!menuOpen)}
+          className="md:hidden text-white hover:text-orange-300"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            className="w-6 h-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16m-7 6h7"
-            />
-          </svg>
+          {menuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
         </button>
       </div>
 
-      {/* Menu Dropdown untuk Mobile */}
+      {/* Dropdown Menu for Mobile */}
       {menuOpen && (
-        <div className="md:hidden mt-4 space-y-2 bg-orange-500 text-white p-4 rounded-lg shadow-lg">
+        <div className="md:hidden bg-orange-500 shadow-lg rounded-lg py-4">
           <Link
-            className="hover:text-gray-300 flex items-center"
             to="/favorites"
+            className="block px-6 py-2 text-white hover:bg-orange-600 flex items-center"
             onClick={() => setMenuOpen(false)}
           >
-            <FontAwesomeIcon icon={faHeart} className="mr-2" />
-            Favorit
+            <HeartIcon size={20} className="mr-2" /> Favorit
           </Link>
           <Link
-            className="hover:text-gray-300 flex items-center"
             to="/recipes"
+            className="block px-6 py-2 text-white hover:bg-orange-600 flex items-center"
             onClick={() => setMenuOpen(false)}
           >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Tambah Recipe
+            <PlusCircleIcon size={20} className="mr-2" /> Tambah Resep
           </Link>
-          <div>
+          <div className="block px-6 py-2 text-white hover:bg-orange-600">
             <button
-              className="w-full text-left hover:text-gray-300 flex items-center"
               onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="w-full text-left flex items-center"
             >
-              <FontAwesomeIcon icon={faUser} className="mr-2" />
-              Profile
+              <UserIcon size={20} className="mr-2" /> Profile
             </button>
             {dropdownOpen && (
               <div className="mt-2 bg-white text-black shadow-lg rounded-lg">
                 <ul>
                   <li>
                     <Link
-                      className="px-4 py-2 hover:bg-gray-200 flex items-center"
                       to="/profile"
+                      className="block px-4 py-2 hover:bg-gray-200 flex items-center"
                       onClick={() => setMenuOpen(false)}
                     >
-                      <FontAwesomeIcon icon={faUser} className="mr-2" />
-                      Profile
+                      <UserIcon size={20} className="mr-2" /> Profile
                     </Link>
                   </li>
                   <li>
                     <button
-                      className="px-4 py-2 text-red-500 hover:bg-gray-200 w-full text-left flex items-center"
                       onClick={handleLogout}
+                      className="block px-4 py-2 text-red-500 hover:bg-gray-200 w-full text-left flex items-center"
                     >
-                      <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
-                      Logout
+                      <LogOutIcon size={20} className="mr-2" /> Logout
                     </button>
                   </li>
                 </ul>
