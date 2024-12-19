@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Recipes from './pages/Recipes';
 import Menu from './pages/MenuUtama';
 import Profile from './pages/Profile';
+import Favorit from './pages/Favorit';
 import PrivateRoute from './PrivateRoute'; // Komponen rute yang dilindungi
 import { AuthProvider } from './AuthContext'; // Koneksi ke konteks autentikasi
 import './index.css'; // Pastikan file CSS benar
@@ -33,6 +34,10 @@ const App = () => {
           <Route
             path="/profile"
             element={<PrivateRoute element={<Profile />} />}
+          />
+            <Route
+          path="/favorit"
+            element={<PrivateRoute element={<Favorit />} />}
           />
         </Routes>
       </Router>

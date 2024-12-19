@@ -19,12 +19,12 @@ const Navbar = () => {
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
         <div className="text-white text-2xl font-bold">
-          <Link to="/" className="hover:opacity-80 transition-opacity">Resepku</Link>
+          <Link to="/menu" className="hover:opacity-80 transition-opacity">Resepku</Link>
         </div>
 
         {/* Menu for Desktop */}
         <div className="hidden md:flex space-x-8 items-center">
-          <Link to="/favorites" className="text-white hover:text-orange-300 flex items-center">
+          <Link to="/favorit" className="text-white hover:text-orange-300 flex items-center">
             <HeartIcon size={20} className="mr-2" /> Favorit
           </Link>
           <Link to="/recipes" className="text-white hover:text-orange-300 flex items-center">
@@ -75,7 +75,7 @@ const Navbar = () => {
       {menuOpen && (
         <div className="md:hidden bg-orange-500 shadow-lg rounded-lg py-4">
           <Link
-            to="/favorites"
+            to="/favorit"
             className="block px-6 py-2 text-white hover:bg-orange-600 flex items-center"
             onClick={() => setMenuOpen(false)}
           >
