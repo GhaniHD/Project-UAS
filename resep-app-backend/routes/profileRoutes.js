@@ -1,6 +1,6 @@
 const express = require('express');
-const { getProfile, updatePhoto } = require('../controllers/profileController');
-const authMiddleware = require('../middleware/authMiddleware'); // Perbaiki import
+const { getProfile, updatePhoto, updateName } = require('../controllers/profileController');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -9,5 +9,8 @@ router.get('/', authMiddleware, getProfile);
 
 // Endpoint untuk memperbarui foto
 router.put('/photo', authMiddleware, updatePhoto);
+
+// Endpoint untuk memperbarui nama
+router.put('/name', authMiddleware, updateName);
 
 module.exports = router;

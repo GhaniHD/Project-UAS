@@ -4,9 +4,10 @@ const bcrypt = require('bcryptjs');
 const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  name: { type: String },
   photo: { type: String, default: 'https://via.placeholder.com/100' },
-  favorites: { type: [String], default: [] },
 });
+
 
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

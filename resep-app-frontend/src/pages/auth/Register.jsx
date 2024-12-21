@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "../../routes/axios";
+import axios from "../../services/axios";
 import AuthForm from "../../components/AuthForm";
 import { Link } from "react-router-dom";
 
