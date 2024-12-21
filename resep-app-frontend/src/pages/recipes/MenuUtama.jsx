@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { HeartIcon, ClockIcon, UsersIcon, EyeIcon } from 'lucide-react';
-import Navbar from '../component/Navbar';
+import Navbar from '../../components/Navbar';
 
 const RecipeMenu = () => {
   const [favorites, setFavorites] = useState([]);

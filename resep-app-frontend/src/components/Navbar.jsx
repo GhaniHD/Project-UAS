@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { MenuIcon, XIcon, UserIcon, HeartIcon, PlusCircleIcon, LogOutIcon } from 'lucide-react';
 
 const Navbar = () => {
@@ -43,7 +43,7 @@ const Navbar = () => {
                   <li>
                     <Link
                       to="/profile"
-                      className="block px-4 py-2 text-black hover:bg-gray-200 flex items-center"
+                      className="block px-4 py-2 text-black hover:bg-gray-200 items-center"
                     >
                       <UserIcon size={20} className="mr-2" /> Profile
                     </Link>
@@ -51,7 +51,7 @@ const Navbar = () => {
                   <li>
                     <button
                       onClick={handleLogout}
-                      className="block w-full px-4 py-2 text-red-500 hover:bg-gray-200 flex items-center"
+                      className="block w-full px-4 py-2 text-red-500 hover:bg-gray-200  items-center"
                     >
                       <LogOutIcon size={20} className="mr-2" /> Logout
                     </button>
@@ -76,14 +76,14 @@ const Navbar = () => {
         <div className="md:hidden bg-orange-500 shadow-lg rounded-lg py-4">
           <Link
             to="/favorit"
-            className="block px-6 py-2 text-white hover:bg-orange-600 flex items-center"
+            className="block px-6 py-2 text-white hover:bg-orange-600  items-center"
             onClick={() => setMenuOpen(false)}
           >
             <HeartIcon size={20} className="mr-2" /> Favorit
           </Link>
           <Link
             to="/recipes"
-            className="block px-6 py-2 text-white hover:bg-orange-600 flex items-center"
+            className="block px-6 py-2 text-white hover:bg-orange-600  items-center"
             onClick={() => setMenuOpen(false)}
           >
             <PlusCircleIcon size={20} className="mr-2" /> Tambah Resep
@@ -101,7 +101,7 @@ const Navbar = () => {
                   <li>
                     <Link
                       to="/profile"
-                      className="block px-4 py-2 hover:bg-gray-200 flex items-center"
+                      className="block px-4 py-2 hover:bg-gray-200  items-center"
                       onClick={() => setMenuOpen(false)}
                     >
                       <UserIcon size={20} className="mr-2" /> Profile
@@ -110,7 +110,7 @@ const Navbar = () => {
                   <li>
                     <button
                       onClick={handleLogout}
-                      className="block px-4 py-2 text-red-500 hover:bg-gray-200 w-full text-left flex items-center"
+                      className="block px-4 py-2 text-red-500 hover:bg-gray-200 w-full text-left items-center"
                     >
                       <LogOutIcon size={20} className="mr-2" /> Logout
                     </button>

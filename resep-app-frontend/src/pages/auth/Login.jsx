@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from '../axios';
-import AuthForm from '../component/AuthForm';
-import { useAuth } from '../AuthContext';
+import axios from '../../routes/axios';
+import AuthForm from '../../components/AuthForm';
+import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 const Login = () => {

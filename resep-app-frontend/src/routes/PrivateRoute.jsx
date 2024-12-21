@@ -1,5 +1,6 @@
+import PropTypes from 'prop-types';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const PrivateRoute = ({ element }) => {
   const { auth, loading } = useAuth();
@@ -8,6 +9,10 @@ const PrivateRoute = ({ element }) => {
   if (!auth) return <Navigate to="/login" replace />;
 
   return element;
+};
+
+PrivateRoute.propTypes = {
+  element: PropTypes.node.isRequired, // Validasi untuk elemen React
 };
 
 export default PrivateRoute;

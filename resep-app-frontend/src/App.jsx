@@ -1,14 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Recipes from './pages/Recipes';
-import Menu from './pages/MenuUtama';
-import Profile from './pages/Profile';
-import Favorit from './pages/Favorit';
-import PrivateRoute from './PrivateRoute'; // Komponen rute yang dilindungi
-import { AuthProvider } from './AuthContext'; // Koneksi ke konteks autentikasi
-import './index.css'; // Pastikan file CSS benar
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Recipes from './pages/recipes/Recipes';
+import Menu from './pages/recipes/MenuUtama';
+import Profile from './pages/user/Profile';
+import Favorit from './pages/user/Favorit';
+import PrivateRoute from '../src/routes/PrivateRoute'; // Komponen rute yang dilindungi
+import { AuthProvider } from './contexts/AuthContext'; // Koneksi ke konteks autentikasi
+import '../src/style/index.css'; // Pastikan file CSS benar
 
 const App = () => {
   return (

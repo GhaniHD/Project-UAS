@@ -1,3 +1,5 @@
+import PropTypes from "prop-types";
+
 const AuthForm = ({ formData, setFormData, onSubmit, buttonText }) => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,6 +40,17 @@ const AuthForm = ({ formData, setFormData, onSubmit, buttonText }) => {
       </button>
     </form>
   );
+};
+
+// Menambahkan PropTypes untuk validasi props
+AuthForm.propTypes = {
+  formData: PropTypes.shape({
+    email: PropTypes.string.isRequired,
+    password: PropTypes.string.isRequired,
+  }).isRequired,
+  setFormData: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  buttonText: PropTypes.string.isRequired,
 };
 
 export default AuthForm;
