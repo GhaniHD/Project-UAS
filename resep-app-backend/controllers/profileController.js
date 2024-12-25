@@ -1,16 +1,27 @@
 const User = require('../models/User');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const bcrypt = require('bcrypt'); // Import bcrypt
 
-// Konfigurasi multer untuk upload foto
+// Konfigurasi multer untuk upload foto (pindahkan ke middleware/upload.js)
 const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, 'uploads/');
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, '../uploads/photo_profile');
+
+    // Membuat direktori beserta subfolder jika belum ada
+    fs.mkdir(dir, { recursive: true }, (err) => {
+      if (err) {
+        console.error('Error creating directory:', err);
+        return cb(err, dir);
+      }
+      cb(null, dir);
+    });
   },
-  filename: function(req, file, cb) {
+  filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  },
 });
 
 const fileFilter = (req, file, cb) => {
@@ -25,8 +36,8 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 1024 * 1024 * 2 // 2MB limit
-  }
+    fileSize: 1024 * 1024 * 2, // 2MB limit
+  },
 }).single('photo');
 
 // Mendapatkan data profil
@@ -43,10 +54,12 @@ exports.getProfile = async (req, res) => {
 };
 
 // Memperbarui foto profil
-exports.updatePhoto = async (req, res) => {
+exports.updatePhoto = (req, res) => {
   upload(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
-      return res.status(400).json({ message: 'File upload error: ' + err.message });
+      return res
+        .status(400)
+        .json({ message: 'File upload error: ' + err.message });
     } else if (err) {
       return res.status(400).json({ message: err.message });
     }
@@ -56,11 +69,12 @@ exports.updatePhoto = async (req, res) => {
     }
 
     try {
-      const photoUrl = `/uploads/${req.file.filename}`;
-      
+      // Path relatif dari direktori 'uploads'
+      const photoPath = 'photo_profile/' + req.file.filename;
+
       const user = await User.findByIdAndUpdate(
         req.user.id,
-        { photo: photoUrl },
+        { photo: photoPath },
         { new: true }
       ).select('-password');
 
@@ -76,28 +90,39 @@ exports.updatePhoto = async (req, res) => {
   });
 };
 
-// Memperbarui nama profil
-exports.updateName = async (req, res) => {
-  const { name } = req.body;
-
-  if (!name || name.trim().length === 0) {
-    return res.status(400).json({ message: 'Name is required' });
-  }
-
+// Memperbarui profil (name, email, password)
+exports.updateProfile = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { name: name.trim() },
-      { new: true }
-    ).select('-password');
+    const userId = req.user.id;
+    const { name, email, password } = req.body;
+
+    // Validasi data
+    if (!name || !email) {
+      return res
+        .status(400)
+        .json({ message: 'Name and email are required!' });
+    }
+
+    const updateData = { name, email };
+
+    // Hash password jika ada
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      updateData.password = hashedPassword;
+    }
+
+    const user = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    }).select('-password');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ name: user.name });
+    res.status(200).json({ message: 'Profile updated', user });
   } catch (error) {
-    console.error('Error in updateName:', error);
+    console.error('Error in updateProfile:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };

@@ -1,37 +1,38 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from '../../services/axios';
 import AuthForm from '../../components/AuthForm';
 import { useAuth } from '../../contexts/AuthContext';
-import { Link } from 'react-router-dom';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const { auth, login } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (auth) {
-      navigate('/menu'); // Redirect to menu if already logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/menu');
     }
-  }, [auth, navigate]);
+  }, [navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const loginFields = [
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'password', label: 'Password', type: 'password', required: true },
+  ];
 
+  const handleSubmit = async (formData) => {
     try {
+      console.log('Data yang dikirim ke backend (login):', formData);
+
       const response = await axios.post('/auth/login', formData);
       const token = response.data.token;
 
-      // Save token to localStorage
+      console.log('Response dari backend (login):', response);
+
       localStorage.setItem('token', token);
-
-      // Call login function from AuthContext with token
       login(token);
-
-      alert('Login successful!');
-      navigate('/menu'); // Redirect to menu page
+      navigate('/menu');
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Login failed!';
       setError(errorMessage);
@@ -43,13 +44,8 @@ const Login = () => {
       <div className="bg-white p-8 rounded-lg shadow-lg">
         <h1 className="text-2xl font-bold text-center mb-6">Login</h1>
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        
-        <AuthForm
-          formData={formData}
-          setFormData={setFormData}
-          onSubmit={handleSubmit}
-          buttonText="Login"
-        />
+
+        <AuthForm fields={loginFields} onSubmit={handleSubmit} buttonText="Login" />
 
         <div className="mt-4 text-center">
           <p className="text-sm">Dont have an account?</p>

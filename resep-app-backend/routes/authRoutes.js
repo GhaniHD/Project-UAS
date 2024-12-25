@@ -1,17 +1,16 @@
 const express = require('express');
-const { login, register } = require('../controllers/authController');
-const authMiddleware = require('../middleware/authMiddleware');
 const router = express.Router();
+const authController = require('../controllers/authController');
+const authMiddleware = require('../middleware/authMiddleware');
+const upload = require('../middleware/upload'); // Import upload middleware
 
-// Endpoint untuk verifikasi token
-router.post('/verify-token', authMiddleware, (req, res) => {
-  res.status(200).json({ message: 'Token is valid', user: req.user });
-});
-
-// Endpoint untuk registrasi
-router.post('/register', register);
+// Endpoint untuk registrasi (dengan upload foto, jika diperlukan)
+router.post('/register', upload.single('photo'), authController.register);
 
 // Endpoint untuk login
-router.post('/login', login);
+router.post('/login', authController.login);
+
+// Endpoint untuk verifikasi token (opsional, jika diperlukan)
+router.post('/verify-token', authMiddleware, authController.verifyToken);
 
 module.exports = router;

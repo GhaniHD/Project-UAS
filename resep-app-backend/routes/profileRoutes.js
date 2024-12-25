@@ -1,16 +1,15 @@
 const express = require('express');
-const { getProfile, updatePhoto, updateName } = require('../controllers/profileController');
-const authMiddleware = require('../middleware/authMiddleware');
-
 const router = express.Router();
+const profileController = require('../controllers/profileController');
+const authMiddleware = require('../middleware/authMiddleware') // Jika digunakan untuk endpoint yang membutuhkan authentikasi
 
-// Endpoint untuk mendapatkan profil
-router.get('/', authMiddleware, getProfile);
+// Mendapatkan data profile
+router.get('/', profileController.getProfile);
 
-// Endpoint untuk memperbarui foto
-router.put('/photo', authMiddleware, updatePhoto);
+// Update foto profile
+router.put('/photo', profileController.updatePhoto);
 
-// Endpoint untuk memperbarui nama
-router.put('/name', authMiddleware, updateName);
+// Update data profile (name, email, password)
+router.put('/', profileController.updateProfile); // Route baru untuk update profile
 
 module.exports = router;

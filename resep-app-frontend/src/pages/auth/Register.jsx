@@ -1,29 +1,74 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "../../services/axios";
-import AuthForm from "../../components/AuthForm";
-import { Link } from "react-router-dom";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from '../../services/axios';
+import AuthForm from '../../components/AuthForm';
 
 const Register = () => {
-  const navigate = useNavigate();
 
-  // State untuk form data
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [error, setError] = useState('');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false); // State untuk menampilkan pesan sukses
 
-  // State untuk menampilkan error
-  const [error, setError] = useState("");
+  const registerFields = [
+    { name: 'name', label: 'Name', type: 'text', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'password', label: 'Password', type: 'password', required: true },
+    {
+      name: 'confirmPassword',
+      label: 'Confirm Password',
+      type: 'password',
+      required: true,
+    },
+    {
+      name: 'photo',
+      label: 'Profile Photo (Optional)',
+      type: 'file',
+      required: false,
+    },
+  ];
 
-  // Fungsi submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (formData) => {
+    if (formData.password !== formData.confirmPassword) {
+      setError('Password and Confirm Password do not match!');
+      return;
+    }
+
     try {
-      await axios.post("/auth/register", formData);
-      navigate("/login"); // Redirect ke halaman login setelah berhasil
+      console.log('registerFields:', registerFields);
+
+      const nonFileData = {};
+      Object.keys(formData).forEach((key) => {
+        console.log('formData di dalam loop:', formData);
+        if (formData[key] && registerFields.find(field => field.name === key).type !== 'file') {
+          nonFileData[key] = formData[key];
+        }
+      });
+
+      console.log('nonFileData:', nonFileData);
+
+      const data = new FormData();
+      if (formData.photo) {
+        data.append('photo', formData.photo);
+      }
+
+      data.append('userData', JSON.stringify(nonFileData));
+
+      console.log('FormData sebelum dikirim:', data);
+      console.log('FormData entries:', Array.from(data.entries()));
+
+      // Lakukan pemanggilan axios.post hanya sekali
+      await axios.post('/auth/register', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Set state menjadi true jika registrasi berhasil
+      setRegistrationSuccess(true);
+
+      // navigate('/login'); // Jangan redirect langsung, tampilkan pesan sukses
     } catch (err) {
-      setError(err.response?.data?.message || "Terjadi kesalahan!");
+      console.error('Error saat registrasi:', err);
+      setError(err.response?.data?.message || 'Registration failed!');
     }
   };
 
@@ -31,11 +76,19 @@ const Register = () => {
     <div className="max-w-md mx-auto mt-10">
       <div className="bg-white p-8 rounded-lg shadow-lg">
         <h1 className="text-2xl font-bold text-center mb-6">Register</h1>
-        {error && <div className="text-red-500 text-center mb-4">{error}</div>}
+
+        {/* Tampilkan pesan sukses */}
+        {registrationSuccess && (
+          <p className="text-green-500 text-center mb-4">
+            Registration successful! Please login.
+          </p>
+        )}
+
+        {/* Tampilkan error */}
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
         <AuthForm
-          formData={formData}
-          setFormData={setFormData}
+          fields={registerFields}
           onSubmit={handleSubmit}
           buttonText="Register"
         />

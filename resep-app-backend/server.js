@@ -1,5 +1,4 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const dotenv = require('dotenv');
@@ -7,9 +6,9 @@ const authRoutes = require('./routes/authRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const path = require('path');
-const multer = require('multer');
 const favoriteRoutes = require('./routes/favoriteRoutes');
 const authMiddleware = require('./middleware/authMiddleware');
+const fs = require('fs');
 
 dotenv.config();
 connectDB();
@@ -18,8 +17,18 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
 app.use(express.json());
+
+// Buat direktori uploads dan photo_profile jika belum ada
+const uploadsDir = path.join(__dirname, 'uploads');
+const photoProfileDir = path.join(uploadsDir, 'photo_profile');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+if (!fs.existsSync(photoProfileDir)) {
+  fs.mkdirSync(photoProfileDir, { recursive: true });
+}
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -29,7 +38,6 @@ app.use('/auth', authRoutes);
 
 // Rute untuk profil (perlu auth)
 app.use('/profile', authMiddleware, profileRoutes);
-app.use('/uploads', express.static('uploads'));
 
 // Route untuk recipes dengan selective auth
 app.use('/recipes', (req, res, next) => {
@@ -41,6 +49,7 @@ app.use('/recipes', (req, res, next) => {
   return authMiddleware(req, res, next);
 }, recipeRoutes);
 
+// Route untuk favorites
 app.use('/favorites', favoriteRoutes);
 
 const PORT = process.env.PORT || 5000;

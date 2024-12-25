@@ -1,27 +1,30 @@
-const express = require('express');
 const jwt = require('jsonwebtoken');
-const router = express.Router();
 require('dotenv').config();
 
 const authMiddleware = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', ''); // Ambil token dari header Authorization
+  // 1. Ambil token dari header Authorization
+  const authHeader = req.header('Authorization');
 
-  if (!token) {
-    return res.status(401).json({ error: 'Token not provided' });
+  if (!authHeader) {
+    return res.status(401).json({ message: 'Authorization header is missing!' });
   }
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded;
-      next();
-    } catch (err) {
-      res.status(401).json({ error: 'Token is not valid' });
-    }
-  };
+  const token = authHeader.replace('Bearer ', ''); // Hilangkan 'Bearer '
 
-// Endpoint untuk memverifikasi token yang dikirimkan
-router.post('/verify-token', authMiddleware, (req, res) => {
-  res.status(200).json({ message: 'Token is valid', user: req.user });
-}); 
+  if (!token) {
+    return res.status(401).json({ message: 'Token not provided' });
+  }
 
-  module.exports = authMiddleware;
+  // 2. Verifikasi token
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Simpan data user dari token ke req.user
+    req.user = decoded; 
+    next();
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ message: 'Token is not valid' });
+  }
+};
+
+module.exports = authMiddleware;

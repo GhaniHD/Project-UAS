@@ -1,54 +1,75 @@
-import PropTypes from "prop-types";
+import { useState, useEffect } from 'react'; // Import useState and useEffect
+import PropTypes from 'prop-types';
 
-const AuthForm = ({ formData, setFormData, onSubmit, buttonText }) => {
+const AuthForm = ({ fields, onSubmit, buttonText }) => {
+  const [formData, setFormData] = useState({});
+
+  useEffect(() => {
+    const initialFormData = {};
+    fields.forEach((field) => {
+      if (field.type !== 'file') {
+        initialFormData[field.name] = '';
+      }
+    });
+    setFormData(initialFormData);
+  }, [fields]);
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const value = e.target.type === 'file' ? e.target.files[0] : e.target.value;
+    setFormData({ ...formData, [e.target.name]: value });
+  };
+
+  const getFormValue = (field) => {
+    if (field.type === 'file') {
+      return undefined; // Don't set value for file inputs
+    }
+    return formData[field.name] || '';
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium">
-          Email
-        </label>
-        <input
-          type="email"
-          name="email"
-          id="email"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full px-4 py-2 border rounded"
-          required
-        />
-      </div>
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium">
-          Password
-        </label>
-        <input
-          type="password"
-          name="password"
-          id="password"
-          value={formData.password}
-          onChange={handleChange}
-          className="w-full px-4 py-2 border rounded"
-          required
-        />
-      </div>
-      <button type="submit" className="w-full py-2 bg-orange-600 text-white rounded">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(formData);
+      }}
+      className="space-y-4"
+    >
+      {fields.map((field) => (
+        <div key={field.name}>
+          <label htmlFor={field.name} className="block text-sm font-medium">
+            {field.label}
+          </label>
+          <input
+            type={field.type}
+            name={field.name}
+            id={field.name}
+            value={getFormValue(field)}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded"
+            accept={field.type === 'file' ? 'image/*' : undefined}
+            required={field.required}
+          />
+        </div>
+      ))}
+      <button
+        type="submit"
+        className="w-full py-2 bg-orange-600 text-white rounded"
+      >
         {buttonText}
       </button>
     </form>
   );
 };
 
-// Menambahkan PropTypes untuk validasi props
 AuthForm.propTypes = {
-  formData: PropTypes.shape({
-    email: PropTypes.string.isRequired,
-    password: PropTypes.string.isRequired,
-  }).isRequired,
-  setFormData: PropTypes.func.isRequired,
+  fields: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      type: PropTypes.oneOf(['text', 'email', 'password', 'file']).isRequired,
+      required: PropTypes.bool,
+    })
+  ).isRequired,
   onSubmit: PropTypes.func.isRequired,
   buttonText: PropTypes.string.isRequired,
 };
