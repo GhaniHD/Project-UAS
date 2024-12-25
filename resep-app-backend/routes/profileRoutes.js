@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const profileController = require('../controllers/profileController');
-const { requireAuth } = require('../middleware/authMiddleware');
+const { authenticateToken } = require('../middleware/auth'); // Pastikan middleware auth sudah benar
 
-// Mendapatkan data profile (membutuhkan autentikasi)
-router.get('/', requireAuth, profileController.getProfile); // Periksa baris ini
+// Mendapatkan data profil
+router.get('/', authenticateToken, profileController.getProfile);
 
-// Update foto profile (membutuhkan autentikasi)
-router.put('/photo', requireAuth, profileController.updatePhoto);
+// Memperbarui foto profil
+router.put('/photo', authenticateToken, profileController.updatePhoto);
 
-// Update data profile (name, email, password) (membutuhkan autentikasi)
-router.put('/', requireAuth, profileController.updateProfile);
+// Memperbarui profil (name, email, password)
+router.put('/', authenticateToken, profileController.updateProfile);
 
 module.exports = router;

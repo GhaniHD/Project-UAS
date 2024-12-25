@@ -2,48 +2,85 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Konfigurasi penyimpanan multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const userId = req.user ? req.user.id : 'default';
-    const dir = path.join(__dirname, `../uploads/photo_profile/${userId}`);
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
-    fs.mkdir(dir, { recursive: true }, (err) => {
-      if (err) {
-        console.error('Error creating directory:', err);
-        return cb(err); // Hapus `dir` dari `cb(err, dir)`
-      }
-      cb(null, dir);
-    });
+// Ensure uploads/photo_profile directory exists
+const photoProfileDir = path.join(uploadsDir, 'photo_profile');
+if (!fs.existsSync(photoProfileDir)) {
+  fs.mkdirSync(photoProfileDir);
+}
+
+// --- Configuration for Profile Photos ---
+const photoProfileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, photoProfileDir);
   },
   filename: (req, file, cb) => {
-    // Gunakan informasi user untuk membuat nama file yang lebih bermakna (opsional)
-    const userPrefix = req.user ? req.user.id.substring(0, 8) + '-' : ''; // Ambil 8 karakter pertama dari userId, atau string kosong jika tidak ada
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, userPrefix + file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
   },
 });
 
-// Filter file untuk hanya menerima file gambar
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+const photoProfileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(
+    path.extname(file.originalname).toLowerCase()
+  );
   const mimetype = allowedTypes.test(file.mimetype);
 
   if (extname && mimetype) {
     return cb(null, true);
   } else {
-    cb(new Error('Only images are allowed (jpeg, jpg, png, gif)'), false);
+    cb(new Error('Only images are allowed for profile photos'), false);
   }
 };
 
-// Konfigurasi upload multer
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
+const uploadPhotoProfile = multer({
+  storage: photoProfileStorage,
+  fileFilter: photoProfileFilter,
   limits: {
-    fileSize: 2 * 1024 * 1024, // Batas ukuran file 2MB
+    fileSize: 2 * 1024 * 1024, // 2MB file size limit for profile photos
   },
 });
 
-module.exports = upload;
+// --- Configuration for Recipe Photos ---
+const photoRecipeStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir); // Langsung simpan di uploads
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'recipe-' + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const photoRecipeFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(
+    path.extname(file.originalname).toLowerCase()
+  );
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (extname && mimetype) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Only images are allowed for recipe photos'), false);
+  }
+};
+
+const uploadPhotoRecipe = multer({
+  storage: photoRecipeStorage,
+  fileFilter: photoRecipeFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB file size limit for recipe photos
+  },
+});
+
+module.exports = {
+  uploadPhotoProfile,
+  uploadPhotoRecipe,
+};

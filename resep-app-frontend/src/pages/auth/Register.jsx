@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from '../../services/axios';
 import AuthForm from '../../components/AuthForm';
 
 const Register = () => {
-
   const [error, setError] = useState('');
-  const [registrationSuccess, setRegistrationSuccess] = useState(false); // State untuk menampilkan pesan sukses
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const navigate = useNavigate(); // Gunakan useNavigate untuk redirect
 
   const registerFields = [
     { name: 'name', label: 'Name', type: 'text', required: true },
@@ -33,41 +33,37 @@ const Register = () => {
     }
 
     try {
-      console.log('registerFields:', registerFields);
+      const data = new FormData();
 
-      const nonFileData = {};
-      Object.keys(formData).forEach((key) => {
-        console.log('formData di dalam loop:', formData);
-        if (formData[key] && registerFields.find(field => field.name === key).type !== 'file') {
-          nonFileData[key] = formData[key];
+      // Iterasi langsung pada registerFields
+      registerFields.forEach((field) => {
+        if (field.type === 'file') {
+          if (formData.photo) {
+            data.append('photo', formData.photo);
+          }
+        } else {
+          data.append(field.name, formData[field.name]);
         }
       });
 
-      console.log('nonFileData:', nonFileData);
-
-      const data = new FormData();
-      if (formData.photo) {
-        data.append('photo', formData.photo);
-      }
-
-      data.append('userData', JSON.stringify(nonFileData));
-
-      console.log('FormData sebelum dikirim:', data);
       console.log('FormData entries:', Array.from(data.entries()));
 
-      // Lakukan pemanggilan axios.post hanya sekali
-      await axios.post('/auth/register', data, {
+      const response = await axios.post('/auth/register', data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      // Set state menjadi true jika registrasi berhasil
+      console.log('Registration successful:', response.data); // Log response untuk debugging
       setRegistrationSuccess(true);
 
-      // navigate('/login'); // Jangan redirect langsung, tampilkan pesan sukses
+      // Redirect ke login setelah 2 detik
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+
     } catch (err) {
-      console.error('Error saat registrasi:', err);
+      console.error('Error during registration:', err);
       setError(err.response?.data?.message || 'Registration failed!');
     }
   };
@@ -77,14 +73,13 @@ const Register = () => {
       <div className="bg-white p-8 rounded-lg shadow-lg">
         <h1 className="text-2xl font-bold text-center mb-6">Register</h1>
 
-        {/* Tampilkan pesan sukses */}
         {registrationSuccess && (
-          <p className="text-green-500 text-center mb-4">
-            Registration successful! Please login.
-          </p>
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <strong className="font-bold">Success!</strong>
+            <span className="block sm:inline"> Registration successful. You will be redirected to the login page shortly.</span>
+          </div>
         )}
 
-        {/* Tampilkan error */}
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
         <AuthForm
@@ -97,7 +92,7 @@ const Register = () => {
           <p className="text-sm">Already have an account?</p>
           <Link
             to="/login"
-            className="text-blue-500 hover:text-blue-700 font-semibold"
+            className="text-orange-500 hover:text-orange-700 font-semibold"
           >
             Login here
           </Link>

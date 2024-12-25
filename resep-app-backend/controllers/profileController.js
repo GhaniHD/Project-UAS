@@ -1,12 +1,47 @@
 const User = require('../models/User');
-const upload = require('../middleware/upload');
-const fs = require('fs');
-const path = require('path');
-const bcrypt = require('bcrypt');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const bcrypt = require('bcrypt');
+
+// Konfigurasi multer untuk upload foto (Sekarang di dalam controller untuk kemudahan)
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, '../uploads/photo_profile');
+
+    // Membuat direktori beserta subfolder jika belum ada
+    fs.mkdir(dir, { recursive: true }, (err) => {
+      if (err) {
+        console.error('Error creating directory:', err);
+        return cb(err, dir);
+      }
+      cb(null, dir);
+    });
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Not an image! Please upload only images.'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 1024 * 1024 * 2, // 2MB limit
+  },
+}).single('photo');
 
 // Mendapatkan data profil
-exports.getProfile = async (req, res) => { // Pastikan fungsi ini di-export
+exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -34,15 +69,21 @@ exports.updatePhoto = (req, res) => {
     }
 
     try {
-      const userId = req.user.id;
-      const oldPhoto = req.user.photo;
-
       // Path relatif dari direktori 'uploads'
-      const photoPath = req.file.path.replace(/\\/g, '/').split('uploads/')[1];
+      const photoPath = 'photo_profile/' + req.file.filename;
+
+      // Hapus foto lama jika ada
+      const oldUser = await User.findById(req.user.id);
+      if (oldUser.photo) {
+        const oldPhotoPath = path.join(__dirname, '../uploads/', oldUser.photo);
+        if (fs.existsSync(oldPhotoPath)) {
+          fs.unlinkSync(oldPhotoPath);
+        }
+      }
 
       const user = await User.findByIdAndUpdate(
-        userId,
-        { photo: `uploads/${photoPath}` },
+        req.user.id,
+        { photo: photoPath },
         { new: true }
       ).select('-password');
 
@@ -50,22 +91,7 @@ exports.updatePhoto = (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Hapus foto lama jika ada dan bukan foto default
-      if (
-        oldPhoto &&
-        !oldPhoto.startsWith('uploads/photo_profile/default')
-      ) {
-        const oldPhotoPath = path.join(__dirname, '../', oldPhoto);
-        fs.unlink(oldPhotoPath, (err) => {
-          if (err) {
-            console.error('Error deleting old photo:', err);
-          } else {
-            console.log('Old photo deleted:', oldPhotoPath);
-          }
-        });
-      }
-
-      res.json({ photo: user.photo, user });
+      res.json({ message: 'Photo updated successfully', user });
     } catch (error) {
       console.error('Error in updatePhoto:', error);
       res.status(500).json({ message: 'Internal Server Error' });
@@ -79,38 +105,46 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { name, email, password } = req.body;
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    // Validasi data: Cek apakah email sudah dipakai oleh user lain
+    if (email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser && existingUser._id.toString() !== userId) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
     }
 
     const updateData = {};
 
-    if (name && name !== user.name) {
-      updateData.name = name;
-    }
+    // Hanya update field yang diisi
+    if(name) updateData.name = name;
+    if(email) updateData.email = email;
 
-    if (email && email !== user.email) {
-      updateData.email = email;
-    }
-
+    // Hash password jika ada
     if (password) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
       updateData.password = hashedPassword;
     }
 
+    // Hanya update jika ada data yang diupdate
     if (Object.keys(updateData).length === 0) {
-      return res.status(200).json({ message: 'No changes detected', user });
+      return res.status(400).json({ message: 'No data provided for update' });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+    const user = await User.findByIdAndUpdate(userId, updateData, {
       new: true,
     }).select('-password');
 
-    res.status(200).json({ message: 'Profile updated', user: updatedUser });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'Profile updated successfully', user });
   } catch (error) {
     console.error('Error in updateProfile:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };

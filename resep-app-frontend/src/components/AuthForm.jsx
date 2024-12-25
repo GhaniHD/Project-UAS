@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; // Import useState and useEffect
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 const AuthForm = ({ fields, onSubmit, buttonText }) => {
@@ -7,24 +7,22 @@ const AuthForm = ({ fields, onSubmit, buttonText }) => {
   useEffect(() => {
     const initialFormData = {};
     fields.forEach((field) => {
-      if (field.type !== 'file') {
-        initialFormData[field.name] = '';
-      }
+      // Inisialisasi semua field, termasuk file, dengan nilai default
+      initialFormData[field.name] = field.type === 'file' ? null : '';
     });
     setFormData(initialFormData);
   }, [fields]);
 
-  const handleChange = (e) => {
-    const value = e.target.type === 'file' ? e.target.files[0] : e.target.value;
-    setFormData({ ...formData, [e.target.name]: value });
+  const handleChange = (event) => {
+    const { name, value, type, files } = event.target;
+    const fieldValue = type === 'file' ? files[0] : value;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: fieldValue,
+    }));
   };
 
-  const getFormValue = (field) => {
-    if (field.type === 'file') {
-      return undefined; // Don't set value for file inputs
-    }
-    return formData[field.name] || '';
-  };
+  // Hapus fungsi getFormValue, tidak diperlukan lagi
 
   return (
     <form
@@ -36,16 +34,19 @@ const AuthForm = ({ fields, onSubmit, buttonText }) => {
     >
       {fields.map((field) => (
         <div key={field.name}>
-          <label htmlFor={field.name} className="block text-sm font-medium">
+          <label
+            htmlFor={field.name}
+            className="block text-sm font-medium text-gray-900"
+          >
             {field.label}
           </label>
           <input
             type={field.type}
             name={field.name}
             id={field.name}
-            value={getFormValue(field)}
+            // value tidak perlu di-set untuk input file
             onChange={handleChange}
-            className="w-full px-4 py-2 border rounded"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
             accept={field.type === 'file' ? 'image/*' : undefined}
             required={field.required}
           />
@@ -53,7 +54,7 @@ const AuthForm = ({ fields, onSubmit, buttonText }) => {
       ))}
       <button
         type="submit"
-        className="w-full py-2 bg-orange-600 text-white rounded"
+        className="w-full text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
       >
         {buttonText}
       </button>
