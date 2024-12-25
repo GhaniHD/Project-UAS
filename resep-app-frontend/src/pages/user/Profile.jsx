@@ -75,7 +75,6 @@ const Profile = () => {
         },
       });
 
-      // Update user data dan reset state
       setUser({ ...user, photo: response.data.photo });
       setNewPhotoFile(null);
       setPreviewUrl('');
@@ -97,36 +96,49 @@ const Profile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const updatedData = {
-        name: newName,
-        email: newEmail,
-      };
+      const updatedData = {};
 
-      if (newPassword.trim() !== '') {
-        updatedData.password = newPassword;
-        // Hashing password (opsional, jika ingin hashing di frontend)
-        // updatedData.password = await bcrypt.hash(newPassword, 10);
+      if (newName !== user.name) {
+        updatedData.name = newName;
       }
 
-      const response = await axios.put('/profile', updatedData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      if (newEmail !== user.email) {
+        updatedData.email = newEmail;
+      }
 
-      // Update user data dan reset state
-      setUser({ ...user, ...response.data.user });
+      if (newPassword) {
+        updatedData.password = newPassword;
+      }
+
+      // Only send the request if there are changes
+      if (Object.keys(updatedData).length > 0) {
+        const response = await axios.put('/profile', updatedData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        setUser({ ...user, ...response.data.user });
+        setSuccessMessage('Profile updated successfully!');
+        setError('');
+      } else {
+        setSuccessMessage('No changes made to the profile.');
+      }
+
       setEditing(false);
-      setSuccessMessage('Profile updated successfully!');
-      setError('');
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (error) {
       console.error('Error updating profile:', error);
-      setError('Failed to update profile');
+      if (error.response && error.response.data && error.response.data.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('Failed to update profile');
+      }
     }
   };
+  
 
   if (loading) {
     return (

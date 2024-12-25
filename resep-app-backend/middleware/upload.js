@@ -5,20 +5,22 @@ const fs = require('fs');
 // Konfigurasi penyimpanan multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../uploads/photo_profile');
+    const userId = req.user ? req.user.id : 'default';
+    const dir = path.join(__dirname, `../uploads/photo_profile/${userId}`);
 
-    // Membuat direktori beserta subfolder jika belum ada
     fs.mkdir(dir, { recursive: true }, (err) => {
       if (err) {
         console.error('Error creating directory:', err);
-        return cb(err, dir); // Kirim error ke multer agar upload dibatalkan
+        return cb(err); // Hapus `dir` dari `cb(err, dir)`
       }
       cb(null, dir);
     });
   },
   filename: (req, file, cb) => {
+    // Gunakan informasi user untuk membuat nama file yang lebih bermakna (opsional)
+    const userPrefix = req.user ? req.user.id.substring(0, 8) + '-' : ''; // Ambil 8 karakter pertama dari userId, atau string kosong jika tidak ada
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, userPrefix + file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   },
 });
 
@@ -40,7 +42,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // Batas ukuran file 5MB
+    fileSize: 2 * 1024 * 1024, // Batas ukuran file 2MB
   },
 });
 
