@@ -123,72 +123,87 @@ const MenuUtama = () => {
           Jelajahi Resep
         </h1>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {recipes.map((recipe) => (
-            <div 
-              key={recipe.id} 
-              className="bg-white border-2 border-orange-100 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <div className="relative">
-                <img 
-                  src={recipe.imageUrl || 'https://via.placeholder.com/400x320'} 
-                  alt={recipe.title} 
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://via.placeholder.com/400x320';
-                  }}
-                />
-                <button
-                  onClick={() => toggleFavorite(recipe.id)}
-                  className="absolute top-4 right-4 bg-white/80 p-2 rounded-full hover:bg-white transition-colors"
-                >
-                  <HeartIcon 
-                    size={20} 
-                    className={favorites.includes(recipe.id) 
-                      ? "text-red-500 fill-red-500" 
-                      : "text-gray-400"
-                    }
-                  />
-                </button>
-              </div>
-              <div className="p-4">
-                <h3 className="text-xl font-bold text-orange-600 mb-2">{recipe.title}</h3>
-                <div className="flex items-center text-sm text-gray-500 mb-3">
-                  <UserIcon size={16} className="mr-2 text-orange-500" />
-                  <span>{recipe.author}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-500 mb-4">
-                  <span className="flex items-center">
-                    <UsersIcon size={16} className="mr-2 text-orange-500" /> 
-                    {recipe.servings} Orang
-                  </span>
-                  <span className="flex items-center">
-                    <ClockIcon size={16} className="mr-2 text-orange-500" /> 
-                    {recipe.cookingTime} Menit
-                  </span>
-                </div>
-                <p className="text-gray-600 mb-4 line-clamp-2">
-                  {recipe.description}
-                </p>
-                <button
-                  onClick={() => openModal(recipe)}
-                  className="w-full bg-orange-600 text-white p-3 rounded-xl hover:bg-orange-700 transition-colors flex items-center justify-center"
-                >
-                  <EyeIcon size={16} className="mr-2" />
-                  Lihat Resep
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+				<div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+					{recipes.map((recipe) => (
+						<div
+							key={recipe.id}
+							className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
+						>
+							<div className="relative aspect-[4/3] overflow-hidden">
+								<img
+									src={recipe.imageUrl || '/api/placeholder/400/320'}
+									alt={recipe.title}
+									className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+									onError={(e) => {
+										e.target.onerror = null;
+										e.target.src = '/api/placeholder/400/320';
+									}}
+								/>
+								<button
+									onClick={() => toggleFavorite(recipe.id)}
+									className="absolute top-3 right-3 bg-white/90 p-2 rounded-full hover:bg-white shadow-sm transition-all"
+								>
+									<HeartIcon
+										size={20}
+										className={favorites.includes(recipe.id)
+											? "text-red-500 fill-red-500"
+											: "text-gray-400"
+										}
+									/>
+								</button>
+							</div>
+
+							<div className="p-5 space-y-4 flex flex-col mt-5">
+								<h3 className="text-lg font-bold text-orange-600 line-clamp-1">
+									{recipe.title}
+								</h3>
+
+								<div className="flex items-center text-sm text-gray-600">
+									<UserIcon size={16} className="mr-2 text-orange-500" />
+									<span className="line-clamp-1">{recipe.author}</span>
+								</div>
+
+								<div className="flex justify-between text-sm text-gray-600">
+									<span className="flex items-center">
+										<UsersIcon size={16} className="mr-2 text-orange-500" />
+										<span>{recipe.servings} Orang</span>
+									</span>
+									<span className="flex items-center">
+										<ClockIcon size={16} className="mr-2 text-orange-500" />
+										<span>{recipe.cookingTime} Menit</span>
+									</span>
+								</div>
+
+								<p className="text-gray-600 text-sm line-clamp-2 min-h-10 max-h-24"> 
+									{recipe.description}
+								</p>
+
+								<div className="flex-grow">
+									<div className="mt-auto">
+										<button
+											onClick={() => openModal(recipe)}
+											className="w-full bg-orange-600 text-white py-3 px-4 rounded-xl 
+											hover:bg-orange-700 active:bg-orange-800 transition-colors flex 
+											items-center justify-center gap-2 font-medium"
+										>
+											<EyeIcon size={16} />
+											<span>Lihat Resep</span>
+										</button>
+									</div>
+								</div>
+								
+							</div>
+						</div>
+					))}
+				</div>
+
       </div>
 
       {/* Modal Detail Resep */}
       {modalData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full relative">
-            <button
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto"> 
+    			<div className="bg-white p-8 rounded-2xl shadow-2xl w-[700px] max-w-[90%] relative max-h-[90vh] overflow-y-auto">
+						<button
               onClick={closeModal}
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
             >
@@ -200,14 +215,14 @@ const MenuUtama = () => {
               <span>{modalData.author}</span>
             </div>
             <img 
-              src={modalData.imageUrl || 'https://via.placeholder.com/400x320'} 
-              alt={modalData.title} 
-              className="w-full h-48 object-cover rounded-xl mb-4"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = 'https://via.placeholder.com/400x320';
-              }}
-            />
+							src={modalData.imageUrl || 'https://via.placeholder.com/400x320'} 
+							alt={modalData.title} 
+							className="w-full h-auto object-cover rounded-xl mb-4" 
+							onError={(e) => {
+								e.target.onerror = null;
+								e.target.src = 'https://via.placeholder.com/400x320';
+							}}
+						/>
             <p className="text-gray-700 mb-4">{modalData.description}</p>
             <div className="flex justify-between text-sm text-gray-500 mb-4">
               <span className="flex items-center">
