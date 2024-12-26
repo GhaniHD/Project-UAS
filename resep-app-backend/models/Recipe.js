@@ -3,35 +3,55 @@ const mongoose = require('mongoose');
 const recipeSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true, // Wajib diisi
+    required: true,
   },
   description: {
     type: String,
-    required: true, // Wajib diisi
+    required: true,
   },
   servings: {
     type: Number,
-    required: true, // Wajib diisi
+    required: true,
   },
   cookingTime: {
     type: Number,
-    required: true, // Wajib diisi
+    required: true,
   },
-  ingredients: {
-    type: [String], // Array of ingredients
-    required: true, // Wajib diisi
-  },
+  ingredients: [{
+    item: {
+      type: String,
+      required: true,
+    },
+    quantity: {
+      type: String,
+      required: true,
+    },
+    unit: {
+      type: String,
+      required: true,
+    }
+  }],
+  steps: [{
+    order: {
+      type: Number,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    }
+  }],
   image: {
-    type: String, // Menyimpan path gambar jika ada
+    type: String,
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // Referensi ke model User
+    ref: 'User',
     required: true,
   },
   createdAt: {
     type: Date,
-    default: Date.now, // Waktu pembuatan
+    default: Date.now,
   },
 });
 

@@ -8,7 +8,8 @@ const RecipePage = () => {
   const [description, setDescription] = useState('');
   const [servings, setServings] = useState('');
   const [cookingTime, setCookingTime] = useState('');
-  const [ingredients, setIngredients] = useState([]);
+  const [ingredients, setIngredients] = useState([{ item: '', quantity: '', unit: '' }]);
+  const [steps, setSteps] = useState([{ description: '', order: 1 }]);
   const [image, setImage] = useState(null);
   const [myRecipes, setMyRecipes] = useState([]);
   const imageInputRef = useRef(null);
@@ -37,18 +38,49 @@ const RecipePage = () => {
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, '']);
+    setIngredients([
+      ...ingredients,
+      { item: '', quantity: '', unit: '' }
+    ]);
   };
 
   const removeIngredient = (index) => {
-    setIngredients(ingredients.filter((_, i) => i !== index));
+    if (ingredients.length > 1) {
+      setIngredients(ingredients.filter((_, i) => i !== index));
+    }
   };
 
-  const handleIngredientChange = (index, value) => {
-    const updatedIngredients = ingredients.map((ingredient, i) =>
-      i === index ? value : ingredient
+  const handleIngredientChange = (index, field, value) => {
+    const updatedIngredients = ingredients.map((ingredient, i) => 
+      i === index ? { ...ingredient, [field]: value } : ingredient
     );
     setIngredients(updatedIngredients);
+  };
+
+  const addStep = () => {
+    setSteps([
+      ...steps,
+      { description: '', order: steps.length + 1 }
+    ]);
+  };
+
+  const removeStep = (index) => {
+    if (steps.length > 1) {
+      const updatedSteps = steps
+        .filter((_, i) => i !== index)
+        .map((step, i) => ({
+          ...step,
+          order: i + 1
+        }));
+      setSteps(updatedSteps);
+    }
+  };
+
+  const handleStepChange = (index, value) => {
+    const updatedSteps = steps.map((step, i) =>
+      i === index ? { ...step, description: value } : step
+    );
+    setSteps(updatedSteps);
   };
 
   const handleImageChange = (e) => {
@@ -62,7 +94,8 @@ const RecipePage = () => {
     setDescription('');
     setServings('');
     setCookingTime('');
-    setIngredients([]);
+    setIngredients([{ item: '', quantity: '', unit: '' }]);
+    setSteps([{ description: '', order: 1 }]);
     setImage(null);
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
@@ -71,8 +104,15 @@ const RecipePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!title || !description || ingredients.length === 0) {
+   
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please log in to add a recipe');
+      return;
+    }
+   
+    // Validate required fields
+    if (!title || !description || !ingredients.length || !steps.length) {
       alert('Please fill in all required fields');
       return;
     }
@@ -83,18 +123,26 @@ const RecipePage = () => {
     formData.append('servings', Number(servings));
     formData.append('cookingTime', Number(cookingTime));
     formData.append('ingredients', JSON.stringify(ingredients));
-    
+    formData.append('steps', JSON.stringify(steps));
+
     if (image) {
       formData.append('image', image);
     }
-
+   
+    // Validate ingredients and steps
+    if (ingredients.some(ing => !ing.item || !ing.quantity) || 
+        steps.some(step => !step.description)) {
+      alert('Please fill in all ingredients and steps details');
+      return;
+    }
+   
     try {
       const response = await axios.post('http://localhost:5000/recipes', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
-
+   
       if (response.status === 200 || response.status === 201) {
         alert('Recipe added successfully!');
         resetForm();
@@ -104,17 +152,39 @@ const RecipePage = () => {
       console.error('Error submitting recipe:', error);
       alert('Failed to add recipe');
     }
-  };
-
-  const handleEdit = (recipe) => {
-    setEditingRecipe(recipe);
-    setTitle(recipe.title);
-    setDescription(recipe.description);
-    setServings(recipe.servings.toString());
-    setCookingTime(recipe.cookingTime.toString());
-    setIngredients(recipe.ingredients);
-    setImage(null);
-    setIsEditModalOpen(true);
+   };
+  
+  const handleEdit = async (recipe) => {
+    try {
+      setEditingRecipe(recipe);
+      setTitle(recipe.title || '');
+      setDescription(recipe.description || '');
+      setServings((recipe.servings || '').toString());
+      setCookingTime((recipe.cookingTime || '').toString());
+      
+      const formattedIngredients = Array.isArray(recipe.ingredients) 
+        ? recipe.ingredients.map(ing => ({
+            item: ing.item || '',
+            quantity: ing.quantity || '',
+            unit: ing.unit || ''
+          }))
+        : [{ item: '', quantity: '', unit: '' }];
+      
+      const formattedSteps = Array.isArray(recipe.steps)
+        ? recipe.steps.map((step, index) => ({
+            description: step.description || '',
+            order: index + 1
+          }))
+        : [{ description: '', order: 1 }];
+      
+      setIngredients(formattedIngredients);
+      setSteps(formattedSteps);
+      setImage(null);
+      setIsEditModalOpen(true);
+    } catch (error) {
+      console.error('Error preparing recipe for edit:', error);
+      alert('Failed to load recipe for editing');
+    }
   };
 
   const handleDelete = async (recipeId) => {
@@ -148,6 +218,7 @@ const RecipePage = () => {
     formData.append('servings', Number(servings));
     formData.append('cookingTime', Number(cookingTime));
     formData.append('ingredients', JSON.stringify(ingredients));
+    formData.append('steps', JSON.stringify(steps));
     
     if (image) {
       formData.append('image', image);
@@ -199,8 +270,8 @@ const RecipePage = () => {
             Kembali ke Menu Utama
           </a>
         </div>
+
       {/* Recipe Creation Form */}
-      
       <div className="max-w-2xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden p-8 mt-10">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-extrabold text-orange-600 tracking-tight">
@@ -301,38 +372,79 @@ const RecipePage = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Ingredients
-            </label>
-            {ingredients.map((ingredient, index) => (
-              <div key={index} className="flex space-x-2 mb-2">
-                <input
-                  type="text"
-                  value={ingredient}
-                  onChange={(e) => handleIngredientChange(index, e.target.value)}
-                  placeholder="Enter ingredient"
-                  className="flex-grow px-4 py-3 border-2 border-orange-100 rounded-xl focus:border-orange-400 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeIngredient(index)}
-                  className="bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-100"
-                >
-                  <TrashIcon size={20} />
-                </button>
-              </div>
-            ))}
+          <div className="space-y-2">
+          <label className="block text-sm font-medium">Ingredients</label>
+          {ingredients.map((ingredient, index) => (
+            <div key={index} className="flex gap-2">
+              <input
+                type="text"
+                value={ingredient.quantity}
+                onChange={(e) => handleIngredientChange(index, 'quantity', e.target.value)}
+                placeholder="Quantity"
+                className="w-24 p-2 border rounded"
+              />
+              <input
+                type="text"
+                value={ingredient.unit}
+                onChange={(e) => handleIngredientChange(index, 'unit', e.target.value)}
+                placeholder="Unit"
+                className="w-24 p-2 border rounded"
+              />
+              <input
+                type="text"
+                value={ingredient.item}
+                onChange={(e) => handleIngredientChange(index, 'item', e.target.value)}
+                placeholder="Ingredient"
+                className="flex-1 p-2 border rounded"
+              />
+              <button
+                type="button"
+                onClick={() => removeIngredient(index)}
+                className="p-2 text-red-500"
+              >
+                <TrashIcon className="w-5 h-5" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addIngredient}
+            className="flex items-center gap-2 text-orange-500"
+          >
+            <PlusIcon className="w-5 h-5" /> Add Ingredient
+          </button>
+        </div>
 
-            <button
-              type="button"
-              onClick={addIngredient}
-              className="w-full flex items-center justify-center bg-orange-50 text-orange-600 p-3 rounded-xl hover:bg-orange-100"
-            >
-              <PlusIcon className="mr-2" />
-              Add Ingredient
-            </button>
-          </div>
+        {/* Steps Section */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Steps</label>
+          {steps.map((step, index) => (
+            <div key={index} className="flex gap-2">
+              <span className="w-8 text-center py-2">{step.order}.</span>
+              <input
+                type="text"
+                value={step.description}
+                onChange={(e) => handleStepChange(index, e.target.value)}
+                placeholder="Describe this step"
+                className="flex-1 p-2 border rounded"
+              />
+              <button
+                type="button"
+                onClick={() => removeStep(index)}
+                className="p-2 text-red-500"
+              >
+                <TrashIcon className="w-5 h-5" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addStep}
+            className="flex items-center gap-2 text-orange-500"
+          >
+            <PlusIcon className="w-5 h-5" /> Add Step
+          </button>
+        </div>
 
           <button
             type="submit"
@@ -391,23 +503,7 @@ const RecipePage = () => {
                     <span>🍽️ {recipe.servings} Servings</span>
                     <span>⏰ {recipe.cookingTime} mins</span>
                   </div>
-                  <div className="mt-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Ingredients:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {recipe.ingredients && recipe.ingredients.length > 0 ? (
-                        recipe.ingredients.map((ingredient, index) => (
-                          <span 
-                            key={index} 
-                            className="bg-orange-50 text-orange-600 text-xs px-2 py-1 rounded-full"
-                          >
-                            {ingredient}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-gray-500">No ingredients listed</span>
-                      )}
-                    </div>
-                  </div>
+
                 </div>
               </div>
             ))
@@ -418,7 +514,8 @@ const RecipePage = () => {
           )}
         </div>
       </div>
-{/* Edit Modal */}
+
+      {/* Edit Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-2xl p-8">
@@ -493,8 +590,23 @@ const RecipePage = () => {
                   <div key={index} className="flex space-x-2 mb-2">
                     <input
                       type="text"
-                      value={ingredient}
-                      onChange={(e) => handleIngredientChange(index, e.target.value)}
+                      value={ingredient.quantity}
+                      onChange={(e) => handleIngredientChange(index, 'quantity', e.target.value)}
+                      placeholder="Quantity"
+                      className="w-24 px-4 py-3 border-2 border-orange-100 rounded-xl focus:border-orange-400 focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={ingredient.unit}
+                      onChange={(e) => handleIngredientChange(index, 'unit', e.target.value)}
+                      placeholder="Unit"
+                      className="w-24 px-4 py-3 border-2 border-orange-100 rounded-xl focus:border-orange-400 focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={ingredient.item}
+                      onChange={(e) => handleIngredientChange(index, 'item', e.target.value)}
+                      placeholder="Ingredient"
                       className="flex-grow px-4 py-3 border-2 border-orange-100 rounded-xl focus:border-orange-400 focus:outline-none"
                     />
                     <button
@@ -506,7 +618,6 @@ const RecipePage = () => {
                     </button>
                   </div>
                 ))}
-
                 <button
                   type="button"
                   onClick={addIngredient}
@@ -514,6 +625,39 @@ const RecipePage = () => {
                 >
                   <PlusIcon className="mr-2" />
                   Add Ingredient
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Steps
+                </label>
+                {steps.map((step, index) => (
+                  <div key={index} className="flex space-x-2 mb-2">
+                    <span className="px-3 py-3">{step.order}.</span>
+                    <input
+                      type="text"
+                      value={step.description}
+                      onChange={(e) => handleStepChange(index, e.target.value)}
+                      placeholder="Describe this step"
+                      className="flex-grow px-4 py-3 border-2 border-orange-100 rounded-xl focus:border-orange-400 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeStep(index)}
+                      className="bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-100"
+                    >
+                      <TrashIcon size={20} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addStep}
+                  className="w-full flex items-center justify-center bg-orange-50 text-orange-600 p-3 rounded-xl hover:bg-orange-100"
+                >
+                  <PlusIcon className="mr-2" />
+                  Add Step
                 </button>
               </div>
 

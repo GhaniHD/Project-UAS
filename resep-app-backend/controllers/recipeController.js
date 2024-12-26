@@ -1,10 +1,9 @@
 const Recipe = require('../models/Recipe');
 
-// Get all public recipes (tanpa auth)
 exports.getAllPublicRecipes = async (req, res) => {
   try {
     const recipes = await Recipe.find()
-      .populate('user', 'name') 
+      .populate('user', 'name')
       .sort({ createdAt: -1 });
     
     const recipesWithFullUrls = recipes.map(recipe => ({
@@ -13,11 +12,19 @@ exports.getAllPublicRecipes = async (req, res) => {
       description: recipe.description,
       servings: recipe.servings,
       cookingTime: recipe.cookingTime,
-      ingredients: recipe.ingredients,
+      ingredients: recipe.ingredients.map(ing => ({
+        item: ing.item || '',
+        quantity: ing.quantity || '',
+        unit: ing.unit || ''
+      })),
+      steps: recipe.steps.map((step, index) => ({
+        description: step.description || '',
+        order: index + 1
+      })),
       imageUrl: recipe.image 
         ? `${req.protocol}://${req.get('host')}${recipe.image}`
         : null,
-      author: recipe.user?.name || 'Anonymous', // Handle jika tidak ada user
+      author: recipe.user?.name || 'Anonymous',
       createdAt: recipe.createdAt
     }));
 
@@ -35,10 +42,8 @@ exports.getAllPublicRecipes = async (req, res) => {
   }
 };
 
-// Get recipes untuk user yang login
 exports.getAllRecipes = async (req, res) => {
   try {
-    // Ambil recipes berdasarkan user yang sedang login
     const recipes = await Recipe.find({ user: req.user.id })
       .sort({ createdAt: -1 });
     
@@ -48,7 +53,15 @@ exports.getAllRecipes = async (req, res) => {
       description: recipe.description,
       servings: recipe.servings,
       cookingTime: recipe.cookingTime,
-      ingredients: recipe.ingredients,
+      ingredients: recipe.ingredients.map(ing => ({
+        item: ing.item || '',
+        quantity: ing.quantity || '',
+        unit: ing.unit || ''
+      })),
+      steps: recipe.steps.map((step, index) => ({
+        description: step.description || '',
+        order: index + 1
+      })),
       imageUrl: recipe.image 
         ? `${req.protocol}://${req.get('host')}${recipe.image}`
         : null,
@@ -70,15 +83,32 @@ exports.getAllRecipes = async (req, res) => {
   }
 };
 
-// Add new recipe
 exports.addRecipe = async (req, res) => {
   try {
-    const { title, description, servings, cookingTime, ingredients } = req.body;
+    const { title, description, servings, cookingTime, ingredients, steps } = req.body;
 
-    // Validate required fields
-    if (!title || !description || !ingredients) {
+    if (!title || !description || !ingredients || !steps) {
       return res.status(400).json({ 
-        message: 'Please provide title, description, and ingredients' 
+        message: 'Please provide title, description, ingredients, and steps' 
+      });
+    }
+
+    const parsedIngredients = JSON.parse(ingredients);
+    const parsedSteps = JSON.parse(steps);
+
+    // Validate ingredients structure
+    if (!Array.isArray(parsedIngredients) || !parsedIngredients.every(ing => 
+      ing.item && ing.quantity && ing.unit)) {
+      return res.status(400).json({
+        message: 'Invalid ingredients format. Each ingredient must have item, quantity, and unit'
+      });
+    }
+
+    // Validate steps structure
+    if (!Array.isArray(parsedSteps) || !parsedSteps.every(step => 
+      step.description && typeof step.description === 'string')) {
+      return res.status(400).json({
+        message: 'Invalid steps format. Each step must have a description'
       });
     }
 
@@ -87,7 +117,11 @@ exports.addRecipe = async (req, res) => {
       description,
       servings: Number(servings),
       cookingTime: Number(cookingTime),
-      ingredients: JSON.parse(ingredients),
+      ingredients: parsedIngredients,
+      steps: parsedSteps.map((step, index) => ({
+        description: step.description,
+        order: index + 1
+      })),
       user: req.user.id
     };
 
@@ -111,7 +145,6 @@ exports.addRecipe = async (req, res) => {
   }
 };
 
-// Update recipe
 exports.updateRecipe = async (req, res) => {
   try {
     let recipe = await Recipe.findById(req.params.id);
@@ -120,19 +153,40 @@ exports.updateRecipe = async (req, res) => {
       return res.status(404).json({ message: 'Recipe not found' });
     }
 
-    // Check ownership
     if (recipe.user.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to update this recipe' });
     }
 
-    const { title, description, servings, cookingTime, ingredients } = req.body;
+    const { title, description, servings, cookingTime, ingredients, steps } = req.body;
     
+    const parsedIngredients = JSON.parse(ingredients);
+    const parsedSteps = JSON.parse(steps);
+
+    // Validate ingredients and steps structure
+    if (!Array.isArray(parsedIngredients) || !parsedIngredients.every(ing => 
+      ing.item && ing.quantity && ing.unit)) {
+      return res.status(400).json({
+        message: 'Invalid ingredients format'
+      });
+    }
+
+    if (!Array.isArray(parsedSteps) || !parsedSteps.every(step => 
+      step.description && typeof step.description === 'string')) {
+      return res.status(400).json({
+        message: 'Invalid steps format'
+      });
+    }
+
     const updateData = {
       title,
       description,
       servings: Number(servings),
       cookingTime: Number(cookingTime),
-      ingredients: JSON.parse(ingredients)
+      ingredients: parsedIngredients,
+      steps: parsedSteps.map((step, index) => ({
+        description: step.description,
+        order: index + 1
+      }))
     };
 
     if (req.file) {
@@ -158,7 +212,6 @@ exports.updateRecipe = async (req, res) => {
   }
 };
 
-// Delete recipe
 exports.deleteRecipe = async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.id);
@@ -167,7 +220,6 @@ exports.deleteRecipe = async (req, res) => {
       return res.status(404).json({ message: 'Recipe not found' });
     }
 
-    // Check ownership
     if (recipe.user.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to delete this recipe' });
     }
