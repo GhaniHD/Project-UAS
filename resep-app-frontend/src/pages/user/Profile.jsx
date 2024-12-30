@@ -1,3 +1,4 @@
+// src/pages/Profile.js
 import { useState, useEffect, useRef } from 'react';
 import { Camera } from 'lucide-react';
 import axios from '../../services/axios';
@@ -11,38 +12,57 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [newPhotoFile, setNewPhotoFile] = useState(null);
   const [newName, setNewName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await axios.get('/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data && response.data.user) {
+        console.log('Fetched user data:', response.data.user);
+        setUser(response.data.user);
+        setNewName(response.data.user.name || '');
+      } else {
+        setError('Invalid user data received');
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setError(error.response?.data?.message || 'Failed to load user data');
+      setLoading(false);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
+    }
+  };
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('/profile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const userData = response.data.user;
-        setUser(userData);
-        setNewName(userData.name || '');
-        setNewEmail(userData.email || '');
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        setError('Failed to load user data');
-        setLoading(false);
+    if (auth) {
+      fetchUserData();
+    }
+  }, [auth, navigate]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
       }
     };
-
-    if (auth) fetchUserData();
-  }, [auth]);
+  }, [previewUrl]);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -55,6 +75,11 @@ const Profile = () => {
         setError('Please select an image file');
         return;
       }
+
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+
       setNewPhotoFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setError('');
@@ -63,294 +88,268 @@ const Profile = () => {
 
   const handlePhotoUpdate = async () => {
     if (!newPhotoFile) return;
+
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('photo', newPhotoFile);
 
+      console.log('Uploading photo...');
       const response = await axios.put('/profile/photo', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
+      console.log('Photo upload response:', response.data);
 
-      setUser({ ...user, photo: response.data.photo });
-      setNewPhotoFile(null);
-      setPreviewUrl('');
-      setSuccessMessage('Photo updated successfully!');
-      setError('');
+      // Update user state with new photo
+      if (response.data && response.data.photo) {
+        const photoUrl = response.data.photo;
+        setUser(prev => ({
+          ...prev,
+          photo: photoUrl
+        }));
+
+        // Clear preview and file
+        setNewPhotoFile(null);
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl('');
+        
+        // Show success message
+        setSuccessMessage('Photo updated successfully!');
+        setError('');
+
+        // Refresh user data
+        await fetchUserData();
+      }
     } catch (error) {
       console.error('Error updating photo:', error);
-      setError('Failed to update photo');
+      setError(error.response?.data?.message || 'Failed to update photo');
     }
   };
 
   const handleProfileUpdate = async (event) => {
     event.preventDefault();
 
-    if (newPassword !== confirmNewPassword) {
-      setError('New password and confirm password do not match!');
+    if (!newName.trim()) {
+      setError('Name is required');
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
-      const updatedData = {};
-
-      if (newName !== user.name) {
-        updatedData.name = newName;
-      }
-
-      if (newEmail !== user.email) {
-        updatedData.email = newEmail;
-      }
-
-      if (newPassword) {
-        updatedData.password = newPassword;
-      }
-
-      // Only send the request if there are changes
-      if (Object.keys(updatedData).length > 0) {
-        const response = await axios.put('/profile', updatedData, {
+      console.log('Updating name to:', newName.trim());
+      
+      const response = await axios.put('/profile/name', 
+        { name: newName.trim() },
+        {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
           },
-        });
+        }
+      );
+      console.log('Name update response:', response.data);
 
-        setUser({ ...user, ...response.data.user });
+      if (response.data && response.data.user) {
+        setUser(response.data.user);
+        setNewName(response.data.user.name);
         setSuccessMessage('Profile updated successfully!');
         setError('');
-      } else {
-        setSuccessMessage('No changes made to the profile.');
+        setEditing(false);
       }
 
-      setEditing(false);
-      setNewPassword('');
-      setConfirmNewPassword('');
+      await fetchUserData();
     } catch (error) {
       console.error('Error updating profile:', error);
-      if (error.response && error.response.data && error.response.data.message) {
-        setError(error.response.data.message);
-      } else {
-        setError('Failed to update profile');
-      }
+      setError(error.response?.data?.message || 'Failed to update profile');
     }
   };
-  
 
   if (loading) {
     return (
-      <p className="text-gray-500 text-center mt-10">Loading user data...</p>
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-500 text-lg">Loading user data...</p>
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <p className="text-red-500 text-center mt-10">
-        User data not available.
-      </p>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 text-lg mb-4">User data not available</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 flex flex-col items-center justify-center min-h-screen">
-      {successMessage && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 flex items-center justify-center">
-          <div className="bg-white p-5 rounded-lg shadow-xl">
-            <p className="text-green-600">{successMessage}</p>
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => {
-                  setSuccessMessage('');
-                  setEditing(false);
-                }}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-          {error}
-        </div>
-      )}
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden w-full max-w-4xl">
-        <div className="p-8 flex flex-col items-center text-gray-800 bg-gradient-to-r from-orange-500 to-yellow-300">
-          <div className="flex justify-start w-full">
-            <button
-              onClick={() => navigate('/menu')}
-              className="bg-white text-orange-500 font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 flex items-center gap-2"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="lucide lucide-arrow-left"
-              >
-                <path d="m12 19-7-7 7-7" />
-                <path d="M19 12H5" />
-              </svg>
-              Back
-            </button>
-          </div>
-          <h3 className="text-2xl font-semibold text-white mb-6 mt-4">
-            User Information
-          </h3>
-          <div className="relative group mb-6">
-            <img
-              src={
-                previewUrl ||
-                (user.photo
-                  ? `http://localhost:5000/${user.photo}`
-                  : 'https://via.placeholder.com/150')
-              }
-              alt="Profile"
-              className="w-40 h-40 rounded-full border-4 border-white object-cover shadow-md"
-            />
-            <div
-              className="absolute bottom-2 right-2 bg-white rounded-full p-2 cursor-pointer hover:bg-gray-100 shadow-md transition-all duration-200"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Camera className="w-6 h-6 text-orange-500" />
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            {newPhotoFile && (
-              <div className="mt-2 flex justify-center gap-2">
+    <div className="min-h-screen bg-gray-100">
+      <div className="container mx-auto px-4 py-8">
+        {/* Success Message Modal */}
+        {successMessage && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
+              <p className="text-green-600 text-center font-semibold">{successMessage}</p>
+              <div className="mt-6 text-center">
                 <button
-                  onClick={handlePhotoUpdate}
-                  className="bg-white text-orange-500 px-4 py-2 rounded-full hover:bg-gray-100"
+                  onClick={() => setSuccessMessage('')}
+                  className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
                 >
-                  Save Photo
-                </button>
-                <button
-                  onClick={() => {
-                    setNewPhotoFile(null);
-                    setPreviewUrl('');
-                  }}
-                  className="bg-white text-red-500 px-4 py-2 rounded-full hover:bg-gray-100"
-                >
-                  Cancel
+                  Close
                 </button>
               </div>
-            )}
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <p className="font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Main Profile Card */}
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-orange-500 to-yellow-300 p-6">
+            <div className="flex justify-between items-center">
+              <button
+                onClick={() => navigate('/menu')}
+                className="bg-white text-orange-500 px-4 py-2 rounded-lg hover:bg-orange-50 transition-colors flex items-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Back
+              </button>
+              <h1 className="text-white text-2xl font-bold">Profile Settings</h1>
+              <div className="w-24"></div>
+            </div>
           </div>
 
-          {editing ? (
-            <form onSubmit={handleProfileUpdate} className="w-full mt-4">
-              <div className="mb-4">
-                <label
-                  htmlFor="name"
-                  className="block text-white text-sm font-bold mb-2"
-                >
-                  Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="block text-white text-sm font-bold mb-2"
-                >
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="password"
-                  className="block text-white text-sm font-bold mb-2"
-                >
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-white text-sm font-bold mb-2"
-                >
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="flex justify-center gap-2">
-                <button
-                  type="submit"
-                  className="bg-white text-orange-500 px-4 py-2 rounded-full hover:bg-gray-100"
-                >
-                  Save Changes
-                </button>
-                <button
-                  onClick={() => {
-                    setEditing(false);
-                    setNewName(user.name || '');
-                    setNewEmail(user.email || '');
-                    setNewPassword('');
-                    setConfirmNewPassword('');
+          {/* Profile Content */}
+          <div className="p-8">
+            {/* Profile Photo */}
+            <div className="flex flex-col items-center mb-8">
+              <div className="relative">
+                <img
+                  src={previewUrl || (user.photo 
+                    ? `http://localhost:5000${user.photo}`
+                    : 'https://via.placeholder.com/150')}
+                  alt="Profile"
+                  className="w-32 h-32 rounded-full object-cover border-4 border-orange-500"
+                  onError={(e) => {
+                    console.log('Image load error, using placeholder');
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/150';
                   }}
-                  className="bg-white text-red-500 px-4 py-2 rounded-full hover:bg-gray-100"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
                 >
-                  Cancel
+                  <Camera className="w-5 h-5 text-orange-500" />
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
               </div>
-            </form>
-          ) : (
-            <div className="text-center mt-4">
-              <h2 className="text-2xl font-semibold text-white">
-                {user.name || 'Add Name'}
-              </h2>
-              <p className="text-s mt-2 text-white">{user.email}</p>
-              <div className="mt-6">
+
+              {/* Photo Update Buttons */}
+              {newPhotoFile && (
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={handlePhotoUpdate}
+                    className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Save Photo
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewPhotoFile(null);
+                      setPreviewUrl('');
+                    }}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Form */}
+            {editing ? (
+              <form onSubmit={handleProfileUpdate} className="space-y-6 max-w-md mx-auto">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="Enter your name"
+                  />
+                </div>
+
+                <div className="flex justify-center gap-4 pt-4">
+                  <button
+                    type="submit"
+                    className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing(false);
+                      setNewName(user.name || '');
+                    }}
+                    className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {user.name || 'Add Name'}
+                </h2>
+                <p className="text-gray-600 mt-2">{user.email}</p>
                 <button
                   onClick={() => setEditing(true)}
-                  className="bg-white text-orange-500 font-bold px-6 py-3 rounded-lg hover:bg-orange-600 hover:text-white transition-colors duration-200"
+                  className="mt-6 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
                 >
                   Edit Profile
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
