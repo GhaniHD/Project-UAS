@@ -196,10 +196,20 @@ const Favorit = () => {
             <div className="mb-4">
               <h3 className="text-xl font-bold text-orange-500 mb-2">Bahan-bahan:</h3>
               <ul className="list-disc list-inside text-gray-700">
-                {modalData.ingredients.map((ingredient, i) => (
-                  <li key={i}>{ingredient}</li>
+                {modalData.ingredients?.map((ingredient, i) => (
+                  <li key={i}>
+                    {`${ingredient.quantity} ${ingredient.unit} ${ingredient.item}`.trim()}
+                  </li>
                 ))}
               </ul>
+            </div>
+            <div className="mb-4">
+              <h3 className="text-xl font-bold text-orange-500 mb-2">Langkah-langkah:</h3>
+              <ol className="list-decimal list-inside text-gray-700 space-y-2">
+                {modalData.steps?.map((step, i) => (
+                  <li key={i}>{step.description}</li>
+                ))}
+              </ol>
             </div>
             <button
               onClick={() => {
